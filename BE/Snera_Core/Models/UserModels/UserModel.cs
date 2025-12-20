@@ -1,0 +1,21 @@
+﻿using Snera_Core.Entities;
+using Snera_Core.Entities.UserEntities;
+
+namespace Snera_Core.Models.UserModels
+{
+    public class UserModel
+    {
+        public Guid Id { get; set; }
+        public string FullName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string ProfileType { get; set; } = string.Empty;
+        public string CurrentRole { get; set; } = string.Empty;
+        public string Experience { get; set; } = string.Empty;
+        public string Bio { get; set; } = string.Empty;
+        public DateTime Created_Timestamp { get; set; } = DateTime.UtcNow;
+        public string User_Status { get; set; } = "Offline";
+        public string Record_State { get; set; }= string.Empty;
+
+        public List<string>? UserSkills { get; set; }
+    }
+}

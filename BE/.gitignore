@@ -1,0 +1,28 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.vsidx
+
+# Build results
+bin/
+obj/
+TestResults/
+*.log
+
+# NuGet
+packages/
+*.nupkg
+*.snupkg
+.nuget/
+
+# Others
+*.db
+*.db-shm
+*.db-wal
+*.DS_Store
+Thumbs.db
+
+# IDE & Cache
+.idea/
+.vscode/
