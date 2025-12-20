@@ -13,7 +13,7 @@ using Snera_Core.Repositories;
 using Snera_Core.Services;
 using Snera_Core.UnitOfWork;
 using System.Text;
-
+//inital check
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
