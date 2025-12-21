@@ -71,7 +71,20 @@ namespace Snera_Core.Services
             if (result != PasswordVerificationResult.Success)
                 throw new Exception(CommonErrors.InvalidCredentials);
 
-            var token = _tokenService.CreateToken(dto);
+            var accessToken = _tokenService.CreateToken(dto);
+            var refreshToken = _tokenService.GenerateRefreshToken();
+
+            var refreshTokenEntity = new RefreshToken
+            {
+                Id = Guid.NewGuid(),
+                UserId = user.Id,
+                Token = refreshToken,
+                ExpiresAt = DateTime.UtcNow.AddDays(1) 
+            };
+
+            await _unitOfWork.RefreshTokens.AddAsync(refreshTokenEntity);
+            await _unitOfWork.SaveAllAsync();
+
 
             return new LoginResponseModel
             {
@@ -79,7 +92,48 @@ namespace Snera_Core.Services
                 UserName = user.FullName,
                 LoginResponseString = "Login successful",
                 UserEmail = dto.Email,
-                AccessToken = token
+                AccessToken = accessToken,
+                RefreshToken = refreshToken
+            };
+        }
+        public async Task<LoginResponseModel> RefreshTokenAsync(string token)
+        {
+            var storedToken = await _unitOfWork.RefreshTokens
+                .FirstOrDefaultAsync(t => t.Token == token && !t.IsRevoked);
+
+            if (storedToken == null || storedToken.ExpiresAt < DateTime.UtcNow)
+                throw new Exception("Invalid refresh token");
+
+            var user = await _unitOfWork.Users
+                .FirstOrDefaultAsync(u => u.Id == storedToken.UserId);
+
+            if (user == null)
+                throw new Exception("User not found");
+
+            storedToken.IsRevoked = true;
+
+            var newRefreshToken = _tokenService.GenerateRefreshToken();
+
+            await _unitOfWork.RefreshTokens.AddAsync(new RefreshToken
+            {
+                Id = Guid.NewGuid(),
+                UserId = user.Id,
+                Token = newRefreshToken,
+                ExpiresAt = DateTime.UtcNow.AddDays(7)
+            });
+
+            var loginModel = new UserLoginModel { Email = user.Email };
+            var newAccessToken = _tokenService.CreateToken(loginModel);
+
+            await _unitOfWork.SaveAllAsync();
+
+            return new LoginResponseModel
+            {
+                UserId = user.Id,
+                UserName = user.FullName,
+                UserEmail = user.Email,
+                AccessToken = newAccessToken,
+                RefreshToken = newRefreshToken
             };
         }
 
@@ -177,6 +231,21 @@ namespace Snera_Core.Services
             await _unitOfWork.SaveAllAsync();
             return "User updated successfully";
         }
+        public async Task<string> LogoutAsync(string refreshToken)
+        {
+            var storedToken = await _unitOfWork.RefreshTokens
+                .FirstOrDefaultAsync(t => t.Token == refreshToken && !t.IsRevoked);
+
+            if (storedToken == null)
+                return "Already logged out";
+
+            storedToken.IsRevoked = true;
+
+            await _unitOfWork.SaveAllAsync();
+
+            return "Logout successful";
+        }
+
 
         private static string GenerateAvatarName(string fullName)
         {

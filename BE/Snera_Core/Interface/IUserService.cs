@@ -14,5 +14,7 @@ namespace Snera_Core.Services
         Task<string> SoftDeleteUserAsync(Guid userId);
         Task<string> UpdateUserAsync(Guid userId, UpdateUserModel dto);
         Task<UserModel?> GetUserByIdAsync(Guid userId);
+        Task<LoginResponseModel> RefreshTokenAsync(string token);
+        Task<string> LogoutAsync(string refreshToken);
     }
 }

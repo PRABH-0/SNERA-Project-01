@@ -98,5 +98,20 @@ namespace Snera_Core.Controllers
             var users = await _userService.GetAllUsersAsync(onlyActiveUsers);
             return Ok(users);
         }
+        [Authorize]
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout([FromBody] LogoutRequestModel model)
+        {
+            var result = await _userService.LogoutAsync(model.RefreshToken);
+            return Ok(new { message = result });
+        }
+
+        [HttpPost("refresh")]
+        public async Task<IActionResult> RefreshToken([FromBody] string token)
+        {
+            var response = await _userService.RefreshTokenAsync(token);
+            return Ok(response);
+        }
+
     }
 }

@@ -22,6 +22,7 @@ namespace Snera_Core.Data
         public DbSet<ProjectComment> ProjectComment { get; set; }
         public DbSet<ResourseLinks> ResourseLinks { get; set; }
         public DbSet<ProjectDeveloperRequestSkill> ProjectDeveloperRequestSkill { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

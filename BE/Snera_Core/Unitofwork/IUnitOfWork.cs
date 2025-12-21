@@ -1,7 +1,7 @@
 ﻿using Snera_Core.Entities;
 using Snera_Core.Entities.ProjectEntities;
 using Snera_Core.Entities.UserEntities;
-using Snera_Core.Interfaces;
+using Snera_Core.Repositories;
 using System;
 using System.Threading.Tasks;
 
@@ -25,6 +25,7 @@ namespace Snera_Core.UnitOfWork
         IRepository<ProjectComment> ProjectComment { get; }
         IRepository<ResourseLinks> ResourseLinks { get; }
         IRepository<ProjectDeveloperRequestSkill> ProjectDeveloperRequestSkill { get; }
+        IRepository<RefreshToken> RefreshTokens { get; }
 
         // Generic repository
         IRepository<T> Repository<T>() where T : class;

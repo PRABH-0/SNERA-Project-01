@@ -4,7 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 
-namespace Snera_Core.Interfaces
+namespace Snera_Core.Repositories
 {
     public interface IRepository<T> where T : class
     {

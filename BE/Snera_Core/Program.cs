@@ -7,7 +7,6 @@ using Microsoft.OpenApi.Models;
 using Scalar.AspNetCore;
 using Snera_Core.Data;
 using Snera_Core.Interface;
-using Snera_Core.Interfaces;
 using Snera_Core.Mappings;
 using Snera_Core.Repositories;
 using Snera_Core.Services;
@@ -69,7 +68,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidAudience = builder.Configuration["JwtConfig:Audience"],
             ValidateLifetime = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
+            ClockSkew = TimeSpan.Zero
         };
     });
 

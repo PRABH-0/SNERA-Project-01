@@ -3,7 +3,6 @@ using Snera_Core.Data;
 using Snera_Core.Entities;
 using Snera_Core.Entities.ProjectEntities;
 using Snera_Core.Entities.UserEntities;
-using Snera_Core.Interfaces;
 using Snera_Core.Repositories;
 using Snera_Core.UnitOfWork;
 using System;
@@ -167,6 +166,16 @@ public class UnitOfWork : IUnitOfWork
             if (_projectDeveloperRequestSkill == null)
                 _projectDeveloperRequestSkill = Repository<ProjectDeveloperRequestSkill>();
             return _projectDeveloperRequestSkill;
+        }
+    }
+    private IRepository<RefreshToken>? _refreshTokens;
+    public IRepository<RefreshToken> RefreshTokens 
+    {
+        get
+        {
+            if (_refreshTokens == null)
+                _refreshTokens = Repository<RefreshToken>();
+            return _refreshTokens;
         }
     }
 

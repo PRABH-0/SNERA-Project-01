@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Snera_Core.Data;
-using Snera_Core.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
