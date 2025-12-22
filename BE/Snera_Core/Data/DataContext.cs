@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Snera_Core.Entities;
+using Snera_Core.Entities.ChatEntities;
 using Snera_Core.Entities.ProjectEntities;
 using Snera_Core.Entities.UserEntities;
 
@@ -23,6 +24,10 @@ namespace Snera_Core.Data
         public DbSet<ResourseLinks> ResourseLinks { get; set; }
         public DbSet<ProjectDeveloperRequestSkill> ProjectDeveloperRequestSkill { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
+        public DbSet<UserConnection> UserConnection { get; set; }
+        public DbSet<Conversation> Conversation {  get; set; }
+        public DbSet<ConversationParticipant> ConversationParticipant {  get; set; }
+        public DbSet<Message> Message { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

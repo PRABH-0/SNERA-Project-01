@@ -71,7 +71,7 @@ namespace Snera_Core.Services
             if (result != PasswordVerificationResult.Success)
                 throw new Exception(CommonErrors.InvalidCredentials);
 
-            var accessToken = _tokenService.CreateToken(dto);
+            var accessToken = _tokenService.CreateToken(user);
             var refreshToken = _tokenService.GenerateRefreshToken();
 
             var refreshTokenEntity = new RefreshToken
@@ -122,8 +122,8 @@ namespace Snera_Core.Services
                 ExpiresAt = DateTime.UtcNow.AddDays(7)
             });
 
-            var loginModel = new UserLoginModel { Email = user.Email };
-            var newAccessToken = _tokenService.CreateToken(loginModel);
+            var newAccessToken = _tokenService.CreateToken(user);
+
 
             await _unitOfWork.SaveAllAsync();
 

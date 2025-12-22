@@ -1,4 +1,5 @@
 ﻿using Snera_Core.Entities;
+using Snera_Core.Entities.ChatEntities;
 using Snera_Core.Entities.ProjectEntities;
 using Snera_Core.Entities.UserEntities;
 using Snera_Core.Repositories;
@@ -25,7 +26,11 @@ namespace Snera_Core.UnitOfWork
         IRepository<ProjectComment> ProjectComment { get; }
         IRepository<ResourseLinks> ResourseLinks { get; }
         IRepository<ProjectDeveloperRequestSkill> ProjectDeveloperRequestSkill { get; }
+        IRepository<Conversation> Conversation { get; }
         IRepository<RefreshToken> RefreshTokens { get; }
+        IRepository<ConversationParticipant> ConversationParticipant { get; }
+        IRepository<Message> Message { get; }
+        IRepository<UserConnection> UserConnection { get; }
 
         // Generic repository
         IRepository<T> Repository<T>() where T : class;

@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore.Storage;
 using Snera_Core.Data;
 using Snera_Core.Entities;
+using Snera_Core.Entities.ChatEntities;
 using Snera_Core.Entities.ProjectEntities;
 using Snera_Core.Entities.UserEntities;
 using Snera_Core.Repositories;
@@ -178,7 +179,46 @@ public class UnitOfWork : IUnitOfWork
             return _refreshTokens;
         }
     }
-
+    private IRepository<Conversation>? _conversation;
+    public IRepository<Conversation> Conversation
+    {
+        get
+        {
+            if (_conversation == null)
+                _conversation = Repository<Conversation>();
+            return _conversation;
+        }
+    }
+    private IRepository<ConversationParticipant>? _conversationParticipant;
+    public IRepository<ConversationParticipant> ConversationParticipant
+    {
+        get
+        {
+            if (_conversationParticipant == null)
+                _conversationParticipant = Repository<ConversationParticipant>();
+            return _conversationParticipant;
+        }
+    }
+    private IRepository<Message>? _message;
+    public IRepository<Message> Message
+    {
+        get
+        {
+            if (_message == null)
+                _message = Repository<Message>();
+            return _message;
+        }
+    }
+    private IRepository<UserConnection>? _userConnection;
+    public IRepository<UserConnection> UserConnection
+    {
+        get
+        {
+            if (_userConnection == null)
+                _userConnection = Repository<UserConnection>();
+            return _userConnection;
+        }
+    }
     public async Task BeginTransactionAsync()
     {
         if (_transaction == null)
