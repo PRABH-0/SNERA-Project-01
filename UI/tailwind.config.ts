@@ -1,46 +1,52 @@
-// @ts-nocheck
 import type { Config } from "tailwindcss";
-import daisyui from "daisyui";
 
 const config: Config = {
+  darkMode: "class",
   content: [
-    "./app/**/*.{js,ts,jsx,tsx}",
-    "./components/**/*.{js,ts,jsx,tsx}",
-    "./hooks/**/*.{js,ts,jsx,tsx}",
+    "./app/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
   ],
-
   theme: {
     extend: {
       colors: {
-        "bg-primary": "var(--bg-primary)",
-        "bg-secondary": "var(--bg-secondary)",
-        "bg-tertiary": "var(--bg-tertiary)",
-        "bg-section": "var(--bg-section)",
-        "text-primary": "var(--text-primary)",
-        "text-secondary": "var(--text-secondary)",
-        "text-tertiary": "var(--text-tertiary)",
-        "border-theme": "var(--border-color)",
-        accent: "var(--accent-color)",
-        "accent-hover": "var(--accent-hover)",
-        card: "var(--card-bg)",
-        overlay: "var(--overlay-bg)",
-        "button-text": "var(--button-text)",
-        "section-border": "var(--section-border)",
+        /* shadcn base tokens → tere variables */
+        background: "var(--bg-primary)",
+        foreground: "var(--text-primary)",
+
+        card: {
+          DEFAULT: "var(--card-bg)",
+          foreground: "var(--text-primary)",
+        },
+
+        border: "var(--border-color)",
+        input: "var(--input-bg)",
+
+        primary: {
+          DEFAULT: "var(--accent-color)",
+          foreground: "var(--button-text)",
+        },
+
+        secondary: {
+          DEFAULT: "var(--bg-secondary)",
+          foreground: "var(--text-secondary)",
+        },
+
+        muted: {
+          DEFAULT: "var(--bg-tertiary)",
+          foreground: "var(--text-tertiary)",
+        },
+
+        ring: "var(--accent-hover)",
+        destructive: "var(--error-color)",
+        success: "var(--success-color)",
+        warning: "var(--warning-color)",
       },
       boxShadow: {
-        theme: "0 8px 24px var(--shadow-color)",
+        theme: "0 4px 12px var(--shadow-color)",
       },
     },
   },
-
-  darkMode: ["class", ".dark-mode"],
-
-  plugins: [daisyui],
-
-  daisyui: {
-    themes: ["light", "dark"],
-    darkTheme: "dark",
-  },
+  plugins: [require("tailwindcss-animate")],
 };
 
 export default config;

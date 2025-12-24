@@ -3,28 +3,22 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-
+import { useTheme } from "next-themes";
 import Searchbar from "../Searchbar/Searchbar";
 import HamBurger from "../Hamburger/Hamburger";
-import ThemeToggle from "../Theme/ThemeToggle";
+import {ThemeToggle} from "../Theme/ThemeToggle";
 import logodark from "@/assets/snera-dark-remove-bg.png";
 import logolight from "@/assets/Snera-canva-2__1_-crop-removebg-light.png";
 import { CreatePostIcon } from "../Sidebar/icons";
-import { getAvatarName } from "@/utils/getAvatarName";
-import { useThemeObserver } from "@/hooks/useThemeObserver";
+import { getAvatarName } from "@/utils/getAvatarName"; 
 import { useUser } from "@/hooks/useUser";
 import { logout } from "@/lib/auth";
 
 const Navbar = () => {
-  const router = useRouter();
-  const theme = useThemeObserver();
+  const router = useRouter(); 
   const { user, setUser, loadingUser } = useUser();
-
-  const handleLogout = async () => {
-    await logout();
-    setUser(null);
-    router.push("/login");
-  };
+  const { theme } = useTheme();
+  
 
   return (
     <div>

@@ -1,26 +1,21 @@
-import type { Metadata } from "next";  
-import Navbar from "@/components/Navbar/Navbar"; 
-
- 
+import type { Metadata } from "next";
+import { ReactNode } from "react";
+import Navbar from "@/components/Navbar/Navbar";
 
 export const metadata: Metadata = {
   title: "Home",
   description: "an project",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+type Props = {
+  children: ReactNode;
+};
+
+export default function HomeLayout({ children }: Props) {
   return (
-    <html lang="en" className="light-mode">
-      <body      
-      >
-        <Navbar/>
-         
-        {children}
-      </body>
-    </html>
+    <>
+      <Navbar />
+      {children}
+    </>
   );
 }

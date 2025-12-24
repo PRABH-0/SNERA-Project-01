@@ -1,52 +1,63 @@
-"use client";
+// "use client";
 
- 
-import { useCallback, useEffect, useState } from 'react';
-export type Theme = 'light' | 'dark' | 'system';
+// import { useEffect, useState } from "react";
 
-export function useTheme(initial: Theme = 'system') {
-  const getInit = (): Theme => {
-    if (typeof window === 'undefined') return 'light';
-    try {
-      const s = localStorage.getItem('theme') as Theme | null;
-      return s || 'system';
-    } catch { return 'system'; }
-  };
-  const [theme, setThemeState] = useState<Theme>(getInit);
+// type Mode = "light" | "dark";
+// const STORAGE_KEY = "theme";
 
-  const apply = useCallback((t: Theme) => {
-    const root = document.documentElement;
-    let mode: 'light'|'dark' = 'light';
-    if (t === 'system') mode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    else mode = t;
+// export function useTheme() {
+//   const [mode, setMode] = useState<Mode | null>(null);
 
-    root.classList.remove('light-mode','dark-mode');
-    root.classList.add(mode === 'dark' ? 'dark-mode' : 'light-mode');
+//   // 🔹 INITIAL LOAD (ONE TIME ONLY)
+//   useEffect(() => {
+//     const saved = localStorage.getItem(STORAGE_KEY) as Mode | null;
 
-    if (mode === 'dark') root.classList.add('dark'); else root.classList.remove('dark');
-    root.setAttribute('data-theme', mode === 'dark' ? 'dark' : 'light');
-  }, []);
+//     let resolved: Mode;
 
-  useEffect(() => {
-    apply(theme);
-    try {
-      if (theme === 'system') localStorage.removeItem('theme');
-      else localStorage.setItem('theme', theme);
-    } catch {}
-  }, [theme, apply]);
+//     if (saved === "light" || saved === "dark") {
+//       resolved = saved; // ✅ user choice wins
+//     } else {
+//       // ✅ fallback to system ONLY if no saved value
+//       resolved = window.matchMedia("(prefers-color-scheme: dark)").matches
+//         ? "dark"
+//         : "light";
+//     }
 
-  useEffect(() => {
-    if (theme !== 'system') return;
-    const m = window.matchMedia('(prefers-color-scheme: dark)');
-    const h = () => apply('system');
-    m.addEventListener ? m.addEventListener('change', h) : m.addListener(h);
-    return () => m.removeEventListener ? m.removeEventListener('change', h) : m.removeListener(h);
-  }, [theme, apply]);
+//     setMode(resolved);
+//     apply(resolved);
+//   }, []);
 
-  return {
-    theme,
-    setTheme: setThemeState,
-    toggle: () => setThemeState(prev => (prev === 'dark' ? 'light' : 'dark')),
-    setSystem: () => setThemeState('system')
-  };
-}
+//   // 🔹 APPLY FUNCTION
+//   const apply = (m: Mode) => {
+//     const root = document.documentElement;
+
+//     root.classList.remove("light-mode", "dark-mode");
+//     root.classList.add(`${m}-mode`);
+//     root.classList.toggle("dark", m === "dark");
+//   };
+
+//   // 🔹 USER TOGGLE
+//   const toggle = () => {
+//     if (!mode) return;
+
+//     const next = mode === "dark" ? "light" : "dark";
+//     setMode(next);
+//     localStorage.setItem(STORAGE_KEY, next);
+//     apply(next);
+//   };
+
+//   return {
+//     theme: mode, // "light" | "dark"
+//     toggle,
+//     setLight: () => {
+//       setMode("light");
+//       localStorage.setItem(STORAGE_KEY, "light");
+//       apply("light");
+//     },
+//     setDark: () => {
+//       setMode("dark");
+//       localStorage.setItem(STORAGE_KEY, "dark");
+//       apply("dark");
+//     },
+//   };
+// }

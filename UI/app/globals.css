@@ -1,10 +1,11 @@
-@import "tailwindcss";
- @plugin "daisyui";
+@import "tailwindcss"; 
+
+ 
+ 
  
 
-
 /* Light Mode Variables */
-.light-mode {
+:root {
   --bg-primary: #dbdbdb;
   --bg-secondary: #f8f9fa;
   --bg-tertiary: #e9ecef;
@@ -43,7 +44,7 @@
 }
 
 /* Dark Mode Variables */
-.dark-mode {
+.dark {
   --bg-primary: #121212;
   --bg-secondary: #1e1e1e;
   --bg-tertiary: #2d2d2d;
@@ -81,15 +82,11 @@
   --error-color: #e74c3c;
 }
 
-
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   transition: background-color 0.3s, color 0.3s;
 }
 
-
-
-
-
-
+ 
+ 
