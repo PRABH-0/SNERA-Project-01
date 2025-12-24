@@ -1,26 +1,95 @@
 @import "tailwindcss";
+ @plugin "daisyui";
+ 
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+
+/* Light Mode Variables */
+.light-mode {
+  --bg-primary: #dbdbdb;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #e9ecef;
+  --bg-section: #f5f7fa;
+  --bg-quadra: #dbdbdb;
+  --text-primary: #2c2c2c;
+  --text-secondary: #666666;
+  --text-tertiary: #495057;
+  --text-forth: #dbdbdb;
+  --border-color: #e6e6e6;
+  --border-line: #d1d5dc;
+  --accent-color: #2c2c2c;
+  --accent-hover: #1a1a1a;
+  --card-bg: #ffffff;
+  --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --skill-bg: #e9ecef;
+  --skill-have: rgba(0, 102, 204, 0.1);
+  --skill-need: rgba(211, 47, 47, 0.1);
+  --badge-partner-bg: rgba(0, 102, 204, 0.1);
+  --badge-partner-text: #0066cc;
+  --badge-client-bg: rgba(46, 125, 50, 0.1);
+  --badge-client-text: #2e7d32;
+  --badge-showcase-bg: rgba(245, 124, 0, 0.1);
+  --badge-showcase-text: #f57c00;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --overlay-bg: rgba(0, 0, 0, 0.7);
+  --input-bg: #ffffff;
+  --button-text: #ffffff;
+  --section-border: #e6e6e6;
+  --success-color: #28a745;
+  --warning-color: #ffc107;
+  --icon-color: #6c757d;
+  --icon-hover: #212529;
+  --post-border: #dee2e6;
+  --error-color: #e74c3c;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Dark Mode Variables */
+.dark-mode {
+  --bg-primary: #121212;
+  --bg-secondary: #1e1e1e;
+  --bg-tertiary: #2d2d2d;
+  --bg-section: #1a1a1a;
+  --bg-quadra: #121212;
+  --text-primary: #ffffff;
+  --text-secondary: #e0e0e0;
+  --text-tertiary: #b0b0b0;
+  --text-forth: #121212;
+  --border-color: #444444;
+  --border-line: #4e4b4b;
+  --accent-color: #ffffff;
+  --accent-hover: #e0e0e0;
+  --card-bg: #1e1e1e;
+  --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --skill-bg: #2d2d2d;
+  --skill-have: rgba(77, 171, 247, 0.2);
+  --skill-need: rgba(239, 83, 80, 0.2);
+  --badge-partner-bg: rgba(0, 102, 204, 0.2);
+  --badge-partner-text: #4dabf7;
+  --badge-client-bg: rgba(46, 125, 50, 0.2);
+  --badge-client-text: #66bb6a;
+  --badge-showcase-bg: rgba(245, 124, 0, 0.2);
+  --badge-showcase-text: #ffb74d;
+  --shadow-color: rgba(0, 0, 0, 0.4);
+  --overlay-bg: rgba(0, 0, 0, 0.9);
+  --input-bg: #2d2d2d;
+  --button-text: #2c2c2c;
+  --section-border: #444444;
+  --success-color: #4caf50;
+  --warning-color: #ff9800;
+  --icon-color: #e0e0e0;
+  --icon-hover: #ffffff;
+  --post-border: #333333;
+  --error-color: #e74c3c;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s, color 0.3s;
 }
+
+
+
+
+
+
