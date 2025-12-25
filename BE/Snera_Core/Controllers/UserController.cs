@@ -98,6 +98,13 @@ namespace Snera_Core.Controllers
             var users = await _userService.GetAllUsersAsync(onlyActiveUsers);
             return Ok(users);
         }
+        [HttpPatch("PatchUser/{userId}")]
+        public async Task<IActionResult> PatchUser(Guid userId, [FromBody] UserModel model)
+        {
+            var result = await _userService.PatchUserAsync(userId, model);
+            return Ok(new { message = result });
+        }
+
         [Authorize]
         [HttpPost("logout")]
         public async Task<IActionResult> Logout([FromBody] LogoutRequestModel model)

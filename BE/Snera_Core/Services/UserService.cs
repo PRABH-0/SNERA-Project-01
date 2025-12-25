@@ -55,7 +55,25 @@ namespace Snera_Core.Services
             await _unitOfWork.Users.AddAsync(newUser);
             await _unitOfWork.SaveAllAsync();
 
+            if (dto.UserSkills != null && dto.UserSkills.Any())
+            {
+                foreach (var skill in dto.UserSkills)
+                {
+                    await _unitOfWork.UserSkills.AddAsync(new UserSkill
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = newUser.Id,
+                        Skill_Name = skill,
+                        Skill_Type = string.Empty,
+                        Record_State = "Active"
+                    });
+                }
+
+                await _unitOfWork.SaveAllAsync();
+            }
+
             return newUser;
+
         }
 
         public async Task<LoginResponseModel> LoginUserAsync(UserLoginModel dto)
@@ -246,6 +264,73 @@ namespace Snera_Core.Services
             return "Logout successful";
         }
 
+        public async Task<string> PatchUserAsync(Guid userId, UserModel dto)
+        {
+            var user = await _unitOfWork.Users
+                .FirstOrDefaultAsync(u => u.Id == userId && u.Record_State == "Active");
+
+            if (user == null)
+                return "User not found";
+
+            if (!string.IsNullOrWhiteSpace(dto.FullName))
+            {
+                user.FullName = dto.FullName;
+                user.Avtar_Name = GenerateAvatarName(dto.FullName);
+            }
+
+            if (!string.IsNullOrWhiteSpace(dto.ProfileType))
+                user.ProfileType = dto.ProfileType;
+
+            if (!string.IsNullOrWhiteSpace(dto.CurrentRole))
+                user.CurrentRole = dto.CurrentRole;
+
+            if (!string.IsNullOrWhiteSpace(dto.Experience))
+                user.Experience = dto.Experience;
+
+            if (!string.IsNullOrWhiteSpace(dto.Bio))
+                user.Bio = dto.Bio;
+
+            if (!string.IsNullOrWhiteSpace(dto.Email))
+            {
+                if (!Regex.IsMatch(dto.Email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+                    throw new Exception(CommonErrors.InvalidEmailFormat);
+
+                var emailExists = await _unitOfWork.Users
+                    .FirstOrDefaultAsync(u =>
+                        u.Email == dto.Email &&
+                        u.Id != userId &&
+                        u.Record_State == "Active");
+
+                if (emailExists != null)
+                    throw new Exception(CommonErrors.EmailAlreadyExists);
+
+                user.Email = dto.Email;
+            }
+
+
+            if (dto.UserSkills != null)
+            {
+                var oldSkills = await _unitOfWork.UserSkills
+                    .FindAsync(s => s.UserId == userId);
+
+                foreach (var s in oldSkills)
+                    _unitOfWork.UserSkills.Delete(s);
+
+                foreach (var skill in dto.UserSkills)
+                {
+                    await _unitOfWork.UserSkills.AddAsync(new UserSkill
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = userId,
+                        Skill_Name = skill,
+                        Skill_Type = string.Empty
+                    });
+                }
+            }
+
+            await _unitOfWork.SaveAllAsync();
+            return "User updated successfully (partial)";
+        }
 
         private static string GenerateAvatarName(string fullName)
         {

@@ -1,4 +1,5 @@
-﻿using Snera_Core.Entities;
+﻿using Microsoft.AspNetCore.Mvc;
+using Snera_Core.Entities;
 using Snera_Core.Entities.UserEntities;
 using Snera_Core.Models.UserModels;
 using System.Collections.Generic;
@@ -16,5 +17,6 @@ namespace Snera_Core.Services
         Task<UserModel?> GetUserByIdAsync(Guid userId);
         Task<LoginResponseModel> RefreshTokenAsync(string token);
         Task<string> LogoutAsync(string refreshToken);
+        Task<string> PatchUserAsync(Guid userId, UserModel dto);
     }
 }

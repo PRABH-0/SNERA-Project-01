@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36511.14 d17.14
+VisualStudioVersion = 17.14.36511.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Snera_Core", "Snera_Core\Snera_Core.csproj", "{13582171-036A-4397-A143-5AD576D91237}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GraphQLDemo", "GraphQLDemo\GraphQLDemo.csproj", "{26B55944-177B-4406-8534-621413A0FDB5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{13582171-036A-4397-A143-5AD576D91237}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{13582171-036A-4397-A143-5AD576D91237}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{13582171-036A-4397-A143-5AD576D91237}.Release|Any CPU.Build.0 = Release|Any CPU
+		{26B55944-177B-4406-8534-621413A0FDB5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26B55944-177B-4406-8534-621413A0FDB5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26B55944-177B-4406-8534-621413A0FDB5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26B55944-177B-4406-8534-621413A0FDB5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
