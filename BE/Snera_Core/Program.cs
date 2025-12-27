@@ -97,7 +97,8 @@ builder.Services.AddCors(options =>
     {
         policy
             .WithOrigins(
-                "http://localhost:5173",   // React
+                "http://localhost:3000",   // ✅ Next.js
+                "https://localhost:3000",
                 "http://127.0.0.1:5500",   // test.html (Live Server)
                 "http://localhost:5500"    // test.html alt
             )
