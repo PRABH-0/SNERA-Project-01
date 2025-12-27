@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { ThemeToggle } from "../Theme/ThemeToggle";
-import Sign from "@/components/Sign/Sign";
+import Sign from "../auth/SignModal";
 import { useTheme } from "next-themes";
 
 import logodark from "@/assets/snera-dark-remove-bg.png";
@@ -15,16 +15,17 @@ const Hero: React.FC = () => {
   useEffect(() => {
     setMounted(true);
   }, []);
-
+  
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [defaultTab, setDefaultTab] = useState<"signin" | "getstarted">(
     "signin"
   );
-
+  
   const openAuth = (tab: "signin" | "getstarted") => {
     setDefaultTab(tab);
     setIsAuthOpen(true);
   };
+  if (!mounted) return null;
 
   return (
     <>
@@ -264,11 +265,11 @@ const Hero: React.FC = () => {
           </footer>
         </section>
 
-        {/* <Sign
+        <Sign
                 isOpen={isAuthOpen}
                 onClose={() => setIsAuthOpen(false)}
                 defaultTab={defaultTab}
-            /> */}
+            />
       </div>
     </>
   );
