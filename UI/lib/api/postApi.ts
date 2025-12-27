@@ -2,46 +2,92 @@
 
 import API from "./api";
 
-type CreateCommentPayload = {
-  userId: string;
-  projectId: string | number;
-  comment: string;
+
+type LikePayload = {
+  user_Id: string;
+  post_Id: string | number;
+};
+type CommentPayload = {
+  user_Id: string;
+  post_Id: string | number;
+  post_Comment: string;
 };
 
+
 const postApi = {
-  // 🔹 Get all projects
+  /* 🔹 Get all projects */
   getAll: (data: any) => {
     return API.post("/Project/GetAllProject", data);
   },
 
-  // 🔹 Create post
+  /* 🔹 Create project / post */
   create: (data: any) => {
     return API.post("/Project/CreatePost", data);
   },
 
-  // 🔹 Like / Unlike project
-  updateLike: (userId: string, projectId: string) => {
+
+  updateLike: (payload: LikePayload) => {
     return API.post(
       "/Project/LikeProjectPost",
       null,
       {
-        params: { userId, projectId },
+        params: {
+          userId: payload.user_Id,
+          projectId: payload.post_Id,
+        },
       }
     );
   },
 
-  // 🔹 Create comment
-  createComment: ({ userId, projectId, comment }: CreateCommentPayload) => {
+  getLikes: async (postId: string | number, userId: string) => {
+    const res = await API.post(
+      "/Project/LikeProjectPost",
+      null,
+      {
+        params: {
+          userId,
+          projectId: postId,
+        },
+      }
+    );
+
+    return {
+      data: {
+        isLike: res.data?.isLike ?? false,
+        postLikes: res.data?.like_Count ?? 0,
+      },
+    };
+  },
+
+  createComment: (payload: CommentPayload) => {
     return API.post(
       "/Project/CommentOnProject",
       null,
       {
-        params: { userId, projectId, comment },
+        params: {
+          userId: payload.user_Id,
+          projectId: payload.post_Id,
+          comment: payload.post_Comment,
+        },
+      }
+    );
+  },
+  likeProject: (payload: LikePayload) => {
+    return API.post(
+      "/Project/LikeProjectPost",
+      null, // ❌ no body
+      {
+        params: {
+          userId: payload.user_Id,
+          projectId: payload.post_Id,
+        },
       }
     );
   },
 
-  // 🔹 Get project with comments
+ getTrendingSkills: () => {
+    return API.get("/Project/GetTrendingSkills");
+  },
   getComments: (projectId: string) => {
     return API.get("/Project/GetProject", {
       params: {
@@ -50,10 +96,6 @@ const postApi = {
       },
     });
   },
-  createProject: (data: any) => {
-  return API.post("/Project/CreatePost", data);
-}
-
 };
 
 export default postApi;
