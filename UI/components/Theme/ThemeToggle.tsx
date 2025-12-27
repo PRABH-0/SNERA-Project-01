@@ -19,7 +19,8 @@ export function ThemeToggle() {
       // className="p-2 rounded-md border"
       aria-label="Toggle theme"
     >
-      {isDark ? <Moon size={21} /> : <Sun size={21} />}
+      {isDark ? <Moon className="fill-[#4dabf7] stroke-none border-none " size={21} /> : <Sun 
+      className="text-[#f57c00] " size={21} />}
     </button>
   );
 }

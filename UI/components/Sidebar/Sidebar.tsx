@@ -33,10 +33,10 @@ const Sidebar: React.FC<SidebarProps> = ({ show, setShowSidebar }) => {
       )}
 
       <div
-        className={`fixed top-16 bottom-0 left-0 w-13 bg-[var(--bg-secondary)] z-50
+        className={`fixed top-16 bottom-0 left-0 w-12 bg-[var(--bg-secondary)] z-50
         border-r border-[var(--border-color)] transition-transform duration-300
         ${show ? "translate-x-0" : "-translate-x-full"}
-        md:translate-x-0 md:w-13`}
+        md:translate-x-0 md:w-12`}
       >
         <ul className="flex flex-col gap-3 mt-4">
           {navItems.map(({ href, label, icon: Icon }) => {

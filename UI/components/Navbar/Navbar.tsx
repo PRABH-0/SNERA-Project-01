@@ -1,5 +1,5 @@
 "use client";
-
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
@@ -8,8 +8,7 @@ import Searchbar from "../Searchbar/Searchbar";
 import HamBurger from "../Hamburger/Hamburger";
 import {ThemeToggle} from "../Theme/ThemeToggle";
 import logodark from "@/assets/snera-dark-remove-bg.png";
-import logolight from "@/assets/Snera-canva-2__1_-crop-removebg-light.png";
-import { CreatePostIcon } from "../Sidebar/icons";
+import logolight from "@/assets/Snera-canva-2__1_-crop-removebg-light.png"; 
 import { getAvatarName } from "@/utils/getAvatarName"; 
 import { useUser } from "@/hooks/useUser";
 import { logout } from "@/lib/auth";
@@ -18,7 +17,14 @@ const Navbar = () => {
   const router = useRouter(); 
   const { user, setUser, loadingUser } = useUser();
   const { theme } = useTheme();
-  
+   const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null; // 👈 important
+
 
   return (
     <div>
@@ -26,6 +32,8 @@ const Navbar = () => {
         <HamBurger />
         <div className=" text-[#f2ffff] mx-6 text-lg font-medium md:absolute left-0   ">
           <Image
+          width={681}
+          height={192}
             className="min-w-27 max-w-27"
             src={theme === "dark" ? logolight : logodark}
             alt="SNERA"
