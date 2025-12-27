@@ -50,6 +50,10 @@ const postApi = {
       },
     });
   },
+  createProject: (data: any) => {
+  return API.post("/Project/CreatePost", data);
+}
+
 };
 
 export default postApi;
