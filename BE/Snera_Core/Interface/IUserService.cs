@@ -18,5 +18,6 @@ namespace Snera_Core.Services
         Task<LoginResponseModel> RefreshTokenAsync(string token);
         Task<string> LogoutAsync(string refreshToken);
         Task<string> PatchUserAsync(Guid userId, UserModel dto);
+        Task<UserProfileResponseModel> GetUserProfileAsync(Guid userId);
     }
 }

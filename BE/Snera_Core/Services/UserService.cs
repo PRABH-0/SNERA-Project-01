@@ -331,6 +331,55 @@ namespace Snera_Core.Services
             await _unitOfWork.SaveAllAsync();
             return "User updated successfully (partial)";
         }
+        public async Task<UserProfileResponseModel> GetUserProfileAsync(Guid userId)
+        {
+            var user = await _unitOfWork.Users
+                .FirstOrDefaultAsync(u => u.Id == userId && u.Record_State == "Active");
+
+            if (user == null)
+                throw new Exception("User not found");
+
+            var skills = await _unitOfWork.UserSkills
+                .FindAsync(s => s.UserId == userId && s.Record_State == "Active");
+
+            var preferences = await _unitOfWork.UserPreference
+                .FindAsync(p => p.UserId == userId && p.Record_State == "Active");
+
+            var profileDetail = await _unitOfWork.UserProfileDetail
+                .FirstOrDefaultAsync(d => d.UserId == userId && d.Record_State == "Active");
+
+            return new UserProfileResponseModel
+            {
+                UserId = user.Id,
+                FullName = user.FullName,
+                AvatarName = user.Avtar_Name,
+                Email = user.Email,
+                ProfileType = user.ProfileType,
+                CurrentRole = user.CurrentRole,
+                Experience = user.Experience,
+                Bio = user.Bio,
+                UserStatus = user.User_Status,
+
+                Skills = skills
+                    .Select(s => s.Skill_Name)
+                    .ToList(),
+
+                ProjectTypes = preferences
+                    .Where(p => p.PreferenceType == "PROJECT_TYPE")
+                    .Select(p => p.PreferenceValue)
+                    .ToList(),
+
+                WorkTypes = preferences
+                    .Where(p => p.PreferenceType == "WORK_TYPE")
+                    .Select(p => p.PreferenceValue)
+                    .ToList(),
+
+                Location = profileDetail?.Location,
+                Availability = profileDetail?.Availability,
+                PreferredRole = profileDetail?.PreferredRole,
+                Education = profileDetail?.Education
+            };
+        }
 
         private static string GenerateAvatarName(string fullName)
         {

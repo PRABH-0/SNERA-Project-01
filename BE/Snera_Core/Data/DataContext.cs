@@ -28,6 +28,8 @@ namespace Snera_Core.Data
         public DbSet<Conversation> Conversation {  get; set; }
         public DbSet<ConversationParticipant> ConversationParticipant {  get; set; }
         public DbSet<Message> Message { get; set; }
+        public DbSet<UserProfileDetail> UserProfileDetail { get; set; }
+        public DbSet<UserPreference> UserPreference { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

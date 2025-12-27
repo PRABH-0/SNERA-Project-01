@@ -104,6 +104,13 @@ namespace Snera_Core.Controllers
             var result = await _userService.PatchUserAsync(userId, model);
             return Ok(new { message = result });
         }
+        [Authorize]
+        [HttpGet("profile/{userId}")]
+        public async Task<IActionResult> GetUserProfile(Guid userId)
+        {
+            var profile = await _userService.GetUserProfileAsync(userId);
+            return Ok(profile);
+        }
 
         [Authorize]
         [HttpPost("logout")]

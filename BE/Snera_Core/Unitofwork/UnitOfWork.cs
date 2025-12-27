@@ -219,6 +219,26 @@ public class UnitOfWork : IUnitOfWork
             return _userConnection;
         }
     }
+    private IRepository<UserPreference>? _userPreference;
+    public IRepository<UserPreference> UserPreference
+    {
+        get
+        {
+            if (_userPreference == null)
+                _userPreference = Repository<UserPreference>();
+            return _userPreference;
+        }
+    }
+    private IRepository<UserProfileDetail>? _userProfileDetail;
+    public IRepository<UserProfileDetail> UserProfileDetail
+    {
+        get
+        {
+            if (_userProfileDetail == null)
+                _userProfileDetail = Repository<UserProfileDetail>();
+            return _userProfileDetail;
+        }
+    }
     public async Task BeginTransactionAsync()
     {
         if (_transaction == null)

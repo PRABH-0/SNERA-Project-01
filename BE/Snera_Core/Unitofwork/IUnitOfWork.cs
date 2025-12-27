@@ -31,6 +31,8 @@ namespace Snera_Core.UnitOfWork
         IRepository<ConversationParticipant> ConversationParticipant { get; }
         IRepository<Message> Message { get; }
         IRepository<UserConnection> UserConnection { get; }
+        IRepository<UserPreference> UserPreference { get; }
+        IRepository<UserProfileDetail> UserProfileDetail { get; }
 
         // Generic repository
         IRepository<T> Repository<T>() where T : class;
