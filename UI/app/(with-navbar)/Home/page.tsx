@@ -429,6 +429,8 @@ const Home: React.FC = () => {
         comments: p.commentCount ?? 0,
         isLiked: Boolean(p.isLiked),
         created_Timestamp: p.createdAt,
+        skillsHave: p.skillsHave || [],
+        skillsNeed: p.skillsNeed || [],
         // Store the original project data including comments
         rawData: p,
         // Store comments if available
@@ -443,30 +445,30 @@ const Home: React.FC = () => {
     }
   };
 
-  const renderSkill = (skillObj: SkillItem | string, idx: number) => {
-    let name = typeof skillObj === "string" ? skillObj : skillObj.name;
-    let type = typeof skillObj === "string" ? undefined : skillObj.type;
+  // Helper function to get badge class based on post type
+  const getBadgeClass = (postType: string = "") => {
+    const type = postType?.toLowerCase() || "";
+    if (type.includes("client") || type === "client") {
+      return "badge-client";
+    } else if (type.includes("learning") || type.includes("practice") || type.includes("showcase")) {
+      return "badge-showcase";
+    } else {
+      return "badge-partner";
+    }
+  };
 
-    const base =
-      "px-3 py-1.5 rounded-full text-xs font-semibold border transition duration-200 hover:-translate-y-0.5";
-
-    const haveClass = "border-blue-500 text-blue-500";
-    const needClass = "border-red-500 text-red-500";
-    const defaultClass =
-      "border-[var(--border-color)] text-[var(--text-primary)]";
-
-    const cls =
-      type === "have"
-        ? `${base} ${haveClass}`
-        : type === "need"
-        ? `${base} ${needClass}`
-        : `${base} ${defaultClass}`;
-
-    return (
-      <span key={idx} className={cls}>
-        {name}
-      </span>
-    );
+  // Helper function to get badge text based on post type
+  const getBadgeText = (postType: string = "") => {
+    const type = postType?.toLowerCase() || "";
+    if (type.includes("client") || type === "client") {
+      return "Client Project";
+    } else if (type.includes("learning") || type.includes("practice")) {
+      return "Project Showcase";
+    } else if (type.includes("showcase")) {
+      return "Project Showcase";
+    } else {
+      return "Looking for Partner";
+    }
   };
 
   return (
@@ -510,15 +512,14 @@ const Home: React.FC = () => {
 
                       <div className="text-[13px] text-[var(--text-secondary)] flex items-center gap-2">
                         <span
-                          className="
+                          className={`
                             inline-block px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-[0.5px]
-                            bg-[var(--badge-partner-bg)] text-[var(--badge-partner-text)]
-                            border border-[var(--badge-partner-text)]
-                          "
+                            border ${getBadgeClass(post.postType)}
+                          `}
                         >
-                          {post.postType || "POST"}
+                          {getBadgeText(post.postType)}
                         </span>
-                        <span> {formatTime(post.created_Timestamp || "")}</span>
+                        <span>• {formatTime(post.created_Timestamp || "")}</span>
                       </div>
                     </div>
                   </div>
@@ -533,23 +534,17 @@ const Home: React.FC = () => {
                       {post.description}
                     </p>
 
-                    {/* Skills List */}
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {post.skills && post.skills.length > 0
-                        ? post.skills.map((s, i) => renderSkill(s, i))
-                        : null}
-
-                      {post.skillsHave?.map((s, i) =>
-                        renderSkill({ name: s, type: "have" }, i)
-                      )}
-
-                      {post.skillsNeed?.map((s, i) =>
-                        renderSkill(
-                          { name: s, type: "need" },
-                          i + (post.skillsHave?.length ?? 0)
-                        )
-                      )}
-                    </div>
+                    {/* Skills List - Updated to match index.html */}
+                    {(post.skillsHave && post.skillsHave.length > 0) || (post.skillsNeed && post.skillsNeed.length > 0) ? (
+                      <div className="post-skills">
+                        {post.skillsHave?.map((skill, index) => (
+                          <span key={`have-${index}`} className="skill-tag have">{skill}</span>
+                        ))}
+                        {post.skillsNeed?.map((skill, index) => (
+                          <span key={`need-${index}`} className="skill-tag need">{skill}</span>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
 
                   {/* Footer Buttons */}
@@ -987,27 +982,26 @@ const Home: React.FC = () => {
                 }}
               />
               <button
-  onClick={postComment}
-  disabled={postingComment || !newComment.trim()}
-  className="comment-submit"
-  style={{
-    padding: "14px 24px ",
-   background: postingComment || !newComment.trim()
-  ? "var(--border-color)"
-  : "var(--comment-button-bg)",
-color: "var(--comment-button-text)",
-    border: "none",
-    borderRadius: "12px",
-    fontWeight: 600,
-    fontSize: "14px",
-    cursor: postingComment || !newComment.trim() ? "not-allowed" : "pointer",
-    minWidth: "100px",
-    opacity: postingComment || !newComment.trim() ? 0.6 : 1,
-  }}
->
-  {postingComment ? "Posting..." : "Post"}
-</button>
-
+                onClick={postComment}
+                disabled={postingComment || !newComment.trim()}
+                className="comment-submit"
+                style={{
+                  padding: "14px 24px",
+                  background: postingComment || !newComment.trim()
+                    ? "var(--border-color)"
+                    : "var(--accent-color)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "12px",
+                  fontWeight: 600,
+                  fontSize: "14px",
+                  cursor: postingComment || !newComment.trim() ? "not-allowed" : "pointer",
+                  minWidth: "100px",
+                  opacity: postingComment || !newComment.trim() ? 0.6 : 1,
+                }}
+              >
+                {postingComment ? "Posting..." : "Post"}
+              </button>
             </div>
           </div>
         </div>
@@ -1029,6 +1023,60 @@ color: "var(--comment-button-text)",
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
+        }
+        
+        /* Skills styling - exactly like index.html */
+        .post-skills {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-bottom: 16px;
+        }
+        
+        .skill-tag {
+          background: var(--skill-bg);
+          padding: 6px 12px;
+          border-radius: 20px;
+          font-size: 12px;
+          color: var(--text-primary);
+          font-weight: 600;
+          border: 1px solid var(--border-color);
+          transition: all 0.2s;
+        }
+        
+        .skill-tag:hover {
+          transform: translateY(-1px);
+        }
+        
+        .skill-tag.have {
+          background: var(--skill-have);
+          color: var(--text-primary);
+          border-color: var(--accent-color);
+        }
+        
+        .skill-tag.need {
+          background: var(--skill-need);
+          color: var(--text-primary);
+          border-color: #ef5350;
+        }
+        
+        /* Badge styling */
+        .badge-partner {
+          background: var(--badge-partner-bg);
+          color: var(--badge-partner-text);
+          border: 1px solid var(--badge-partner-text);
+        }
+        
+        .badge-client {
+          background: var(--badge-client-bg);
+          color: var(--badge-client-text);
+          border: 1px solid var(--badge-client-text);
+        }
+        
+        .badge-showcase {
+          background: var(--badge-showcase-bg);
+          color: var(--badge-showcase-text);
+          border: 1px solid var(--badge-showcase-text);
         }
         
         .comments-list::-webkit-scrollbar {

@@ -47,7 +47,7 @@ const Navbar = () => {
 
             <div
               className="dropdown curser-pointer "
-              onClick={() => router.push("/CreatePost")}
+              onClick={() => router.push("/createProject")}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

@@ -174,7 +174,7 @@ const CreatePost: React.FC = () => {
     setLoading(true);
     try {
 
-      await postApi.createProject(payload);
+      await postApi.create(payload);
     // console.log("hit create APi");      
       setLoading(false);
       setShowSuccessPopup(true);
