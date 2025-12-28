@@ -23,6 +23,8 @@ type Post = {
   comments?: number;
   isLiked?: boolean;
   created_Timestamp?: string;
+  // Add comment data fields
+  commentData?: any[]; // This will hold the actual comments from the API
 };
 
 type TrendingSkill = {
@@ -64,6 +66,7 @@ const Home: React.FC = () => {
   // Comments states
   const [showComments, setShowComments] = useState(false);
   const [currentPostId, setCurrentPostId] = useState<string | number | null>(null);
+  const [currentPostTitle, setCurrentPostTitle] = useState<string>("");
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [commentsLoading, setCommentsLoading] = useState(false);
@@ -95,24 +98,39 @@ const Home: React.FC = () => {
   const formatTime = (utcDateString: string) => {
     if (!utcDateString) return "Just now";
     
-    const date = new Date(utcDateString);
-    const local = new Date(
-      date.getTime() + new Date().getTimezoneOffset() * -60000
-    );
+    try {
+      // Parse the UTC date string
+      const date = new Date(utcDateString);
+      if (isNaN(date.getTime())) return "Just now";
+      
+      // Convert to local time
+      const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+      
+      const now = new Date();
+      const seconds = Math.floor((now.getTime() - localDate.getTime()) / 1000);
 
-    const seconds = Math.floor((Date.now() - local.getTime()) / 1000);
+      if (seconds < 60) return "Just now";
+      if (seconds < 3600) {
+        const mins = Math.floor(seconds / 60);
+        return `${mins} ${mins === 1 ? 'min' : 'mins'} ago`;
+      }
+      if (seconds < 86400) {
+        const hours = Math.floor(seconds / 3600);
+        return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
+      }
 
-    if (seconds < 60) return "Just now";
-    if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
-
-    const days = Math.floor(seconds / 86400);
-    if (days < 15) return `${days} days ago`;
-    return local.toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+      const days = Math.floor(seconds / 86400);
+      if (days < 15) return `${days} ${days === 1 ? 'day' : 'days'} ago`;
+      
+      // For older dates, show the actual date
+      return localDate.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    } catch {
+      return "Just now";
+    }
   };
 
   const getAvatarColor = (name: string = ""): string => {
@@ -165,16 +183,37 @@ const Home: React.FC = () => {
     }
   };
 
-  // Fetch comments for a post - UPDATED for your API
-  const fetchComments = async (postId: string | number) => {
+  // Fetch comments for a post - Updated to handle both API and local data
+  const fetchComments = async (postId: string | number, postData?: any) => {
     try {
       setCommentsLoading(true);
+      
+      // First check if we have comments in the post data
+      if (postData?.comments && Array.isArray(postData.comments) && postData.comments.length > 0) {
+        console.log("Using comments from post data:", postData.comments);
+        
+        // Transform API response to match our Comment type
+        const formattedComments: Comment[] = postData.comments.map((comment: any) => ({
+          id: comment.comment_Id || comment.id,
+          user: comment.user_Name || comment.author_Name || "User",
+          avatar: getAvatarName(comment.user_Name || comment.author_Name),
+          text: comment.comment_Text || comment.text || "",
+          time: formatTime(comment.created_At || comment.created_Timestamp || comment.date),
+          user_Id: comment.user_Id,
+          author_Name: comment.user_Name || comment.author_Name,
+          comment_Text: comment.comment_Text,
+          created_Timestamp: comment.created_At || comment.created_Timestamp
+        }));
+        
+        setComments(formattedComments);
+        setCommentsLoading(false);
+        return;
+      }
+      
+      // If no comments in post data, try to fetch from API
       const res = await postApi.getComments(String(postId));
+      console.log("Fetched comments from API:", res.data);
       
-      console.log("Comments API response:", res.data);
-      
-      // Your API returns the entire project object. Let's check the structure.
-      // Based on the getAll API response, comments might be in comment_Count or a separate array
       let commentsData = [];
       
       // Check if there's a comments array in the response
@@ -186,7 +225,6 @@ const Home: React.FC = () => {
         commentsData = res.data.project.comments;
       } else if (res.data && typeof res.data === 'object') {
         // If we can't find comments array, let's check common patterns
-        // This is a fallback - you might need to adjust based on your actual API response
         const possibleCommentFields = ['comments', 'projectComments', 'postComments', 'commentList'];
         for (const field of possibleCommentFields) {
           if (Array.isArray(res.data[field])) {
@@ -196,73 +234,36 @@ const Home: React.FC = () => {
         }
       }
       
-      console.log("Extracted comments data:", commentsData);
-      
       // Transform API response to match our Comment type
       const formattedComments: Comment[] = commentsData.map((comment: any) => ({
         id: comment.comment_Id || comment.id,
-        user: comment.author_Name || comment.user_Name || "User",
-        avatar: getAvatarName(comment.author_Name || comment.user_Name),
-        text: comment.comment_Text || comment.text || comment.comment || "",
-        time: formatTime(comment.created_Timestamp || comment.createdAt || comment.date),
-        user_Id: comment.user_Id || comment.userId,
-        author_Name: comment.author_Name || comment.user_Name,
-        comment_Text: comment.comment_Text || comment.text || comment.comment,
-        created_Timestamp: comment.created_Timestamp || comment.createdAt
+        user: comment.user_Name || comment.author_Name || "User",
+        avatar: getAvatarName(comment.user_Name || comment.author_Name),
+        text: comment.comment_Text || comment.text || "",
+        time: formatTime(comment.created_At || comment.created_Timestamp || comment.date),
+        user_Id: comment.user_Id,
+        author_Name: comment.user_Name || comment.author_Name,
+        comment_Text: comment.comment_Text,
+        created_Timestamp: comment.created_At || comment.created_Timestamp
       }));
       
-      // If no comments found, use mock data for testing
-      if (formattedComments.length === 0) {
-        console.log("No comments found in API response, using mock data");
-        // Mock comments for testing
-        formattedComments.push(
-          {
-            id: "1",
-            user: "Priya K",
-            avatar: "PK",
-            text: "This sounds interesting! I have experience with Node.js and MongoDB. Would love to collaborate.",
-            time: "1 hour ago"
-          },
-          {
-            id: "2",
-            user: "Alex S",
-            avatar: "AS",
-            text: "Great initiative! How long do you think this project will take?",
-            time: "45 minutes ago"
-          }
-        );
-      }
-      
       setComments(formattedComments);
+      
     } catch (err) {
       console.error("Failed to fetch comments:", err);
-      // Use mock data if API fails
-      setComments([
-        {
-          id: "1",
-          user: "Priya K",
-          avatar: "PK",
-          text: "This sounds interesting! I have experience with Node.js and MongoDB. Would love to collaborate.",
-          time: "1 hour ago"
-        },
-        {
-          id: "2",
-          user: "Alex S",
-          avatar: "AS",
-          text: "Great initiative! How long do you think this project will take?",
-          time: "45 minutes ago"
-        }
-      ]);
+      // Use empty array if API fails
+      setComments([]);
     } finally {
       setCommentsLoading(false);
     }
   };
 
   // Open comments popup
-  const openComments = async (postId: string | number) => {
+  const openComments = async (postId: string | number, postTitle: string = "", postData?: any) => {
     setCurrentPostId(postId);
+    setCurrentPostTitle(postTitle);
     setShowComments(true);
-    await fetchComments(postId);
+    await fetchComments(postId, postData);
     
     // Focus on comment input when opened
     setTimeout(() => {
@@ -276,11 +277,12 @@ const Home: React.FC = () => {
   const closeComments = () => {
     setShowComments(false);
     setCurrentPostId(null);
+    setCurrentPostTitle("");
     setComments([]);
     setNewComment("");
   };
 
-  // Post a new comment - UPDATED to use your API
+  // Post a new comment
   const postComment = async () => {
     if (!newComment.trim() || !currentPostId) return;
     
@@ -324,11 +326,6 @@ const Home: React.FC = () => {
             : p
         )
       );
-      
-      // Refetch comments to get actual data from server
-      setTimeout(() => {
-        fetchComments(currentPostId);
-      }, 500);
       
     } catch (err) {
       console.error("Failed to post comment:", err);
@@ -427,11 +424,15 @@ const Home: React.FC = () => {
         description: p.description,
         postType: p.projectType,
         author_Name: p.author_Name,
-        avtar_Name: p.avatar_Name ?? getAvatarName(p.author_Name),
+        avtar_Name: p.avtar_Name ?? getAvatarName(p.author_Name),
         likes: p.likeCount ?? 0,
-        comments: p.comment_Count ?? 0,
+        comments: p.commentCount ?? 0,
         isLiked: Boolean(p.isLiked),
         created_Timestamp: p.createdAt,
+        // Store the original project data including comments
+        rawData: p,
+        // Store comments if available
+        commentData: p.comments || []
       }));
 
       setPosts((prev) => [...prev, ...normalized]);
@@ -581,7 +582,7 @@ const Home: React.FC = () => {
                       </button>
 
                       <button
-                        onClick={() => openComments(post.id || "")}
+                        onClick={() => openComments(post.id || "", post.title || "", (post as any).rawData)}
                         className="flex items-center gap-2 text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] px-3 py-2 rounded-lg"
                       >
                         <svg
@@ -720,12 +721,12 @@ const Home: React.FC = () => {
             left: 0,
             width: "100%",
             height: "100%",
-            background: "rgba(0, 0, 0, 0.7)",
+            background: "rgba(0, 0, 0, 0.8)",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
             zIndex: 2000,
-            backdropFilter: "blur(5px)",
+            backdropFilter: "blur(8px)",
           }}
           onClick={(e) => {
             if (e.target === e.currentTarget) closeComments();
@@ -735,16 +736,17 @@ const Home: React.FC = () => {
             className="comments-container"
             style={{
               background: "var(--bg-secondary)",
-              borderRadius: "12px",
-              padding: "20px",
+              borderRadius: "16px",
+              padding: "24px",
               width: "90%",
-              maxWidth: "900px",
-              height: "85vh",
-              maxHeight: "90vh",
+              maxWidth: "500px",
+              height: "80vh",
+              maxHeight: "85vh",
               overflowY: "auto",
               position: "relative",
-              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
-              animation: "slideUp 0.4s ease-out",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+              border: "1px solid var(--border-color)",
+              animation: "slideUp 0.3s ease-out",
               display: "flex",
               flexDirection: "column",
             }}
@@ -755,46 +757,59 @@ const Home: React.FC = () => {
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "16px",
-                paddingBottom: "12px",
-                borderBottom: "1px solid var(--border-color)",
+                alignItems: "flex-start",
+                marginBottom: "20px",
+                paddingBottom: "16px",
+                borderBottom: "2px solid var(--border-color)",
               }}
             >
-              <h3 
-                className="comments-title"
-                style={{
-                  fontSize: "20px",
-                  fontWeight: 700,
-                  color: "var(--text-primary)",
-                }}
-              >
-                Comments
-              </h3>
+              <div style={{ flex: 1 }}>
+                <h3 
+                  className="comments-title"
+                  style={{
+                    fontSize: "22px",
+                    fontWeight: 700,
+                    color: "var(--text-primary)",
+                    marginBottom: "4px",
+                  }}
+                >
+                  Comments
+                </h3>
+                {currentPostTitle && (
+                  <p style={{
+                    fontSize: "14px",
+                    color: "var(--text-secondary)",
+                    opacity: 0.8,
+                  }}>
+                    On: <strong>{currentPostTitle}</strong>
+                  </p>
+                )}
+              </div>
               <button
                 onClick={closeComments}
                 className="close-comments"
                 style={{
-                  background: "none",
+                  background: "var(--bg-tertiary)",
                   border: "none",
                   fontSize: "24px",
                   cursor: "pointer",
-                  color: "var(--text-secondary)",
-                  transition: "color 0.3s",
-                  width: "32px",
-                  height: "32px",
+                  color: "var(--text-primary)",
+                  transition: "all 0.3s",
+                  width: "36px",
+                  height: "36px",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  borderRadius: "50%",
+                  borderRadius: "8px",
+                  marginLeft: "12px",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.color = "var(--text-primary)";
-                  e.currentTarget.style.backgroundColor = "var(--bg-tertiary)";
+                  e.currentTarget.style.background = "var(--accent-color)";
+                  e.currentTarget.style.color = "white";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.color = "var(--text-secondary)";
-                  e.currentTarget.style.backgroundColor = "transparent";
+                  e.currentTarget.style.background = "var(--bg-tertiary)";
+                  e.currentTarget.style.color = "var(--text-primary)";
                 }}
               >
                 &times;
@@ -805,10 +820,9 @@ const Home: React.FC = () => {
             <div 
               className="comments-list"
               style={{
-                marginBottom: "16px",
-                maxHeight: "calc(85vh - 140px)",
+                marginBottom: "20px",
+                maxHeight: "calc(80vh - 200px)",
                 overflowY: "auto",
-                paddingRight: "8px",
                 flex: 1,
               }}
             >
@@ -817,8 +831,9 @@ const Home: React.FC = () => {
                   className="comment-item"
                   style={{
                     textAlign: "center",
-                    padding: "20px",
+                    padding: "32px",
                     color: "var(--text-secondary)",
+                    fontSize: "15px",
                   }}
                 >
                   Loading comments...
@@ -828,8 +843,10 @@ const Home: React.FC = () => {
                   className="comment-item"
                   style={{
                     textAlign: "center",
-                    padding: "20px",
+                    padding: "32px",
                     color: "var(--text-secondary)",
+                    fontSize: "15px",
+                    opacity: 0.7,
                   }}
                 >
                   No comments yet. Be the first to comment!
@@ -840,24 +857,20 @@ const Home: React.FC = () => {
                     key={comment.id || index}
                     className="comment-item"
                     style={{
-                      padding: "12px 0",
-                      borderBottom: "1px solid var(--border-color)",
-                      marginBottom: 0,
-                      background: "transparent",
-                      border: "none",
-                      transition: "background-color 0.2s",
+                      padding: "16px",
+                      marginBottom: "12px",
+                      background: "var(--bg-tertiary)",
+                      borderRadius: "12px",
+                      border: "1px solid var(--border-color)",
+                      transition: "all 0.2s",
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = "var(--bg-tertiary)";
-                      e.currentTarget.style.margin = "0 -8px";
-                      e.currentTarget.style.padding = "12px 8px";
-                      e.currentTarget.style.borderRadius = "6px";
+                      e.currentTarget.style.transform = "translateX(4px)";
+                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.1)";
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "transparent";
-                      e.currentTarget.style.margin = "0";
-                      e.currentTarget.style.padding = "12px 0";
-                      e.currentTarget.style.borderRadius = "0";
+                      e.currentTarget.style.transform = "translateX(0)";
+                      e.currentTarget.style.boxShadow = "none";
                     }}
                   >
                     <div 
@@ -865,22 +878,22 @@ const Home: React.FC = () => {
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: "10px",
-                        marginBottom: "6px",
+                        gap: "12px",
+                        marginBottom: "8px",
                       }}
                     >
                       <div 
                         className="comment-avatar"
                         style={{
-                          width: "32px",
-                          height: "32px",
+                          width: "36px",
+                          height: "36px",
                           borderRadius: "50%",
-                          background: "linear-gradient(135deg, var(--accent-color), #0099ff)",
+                          background: "linear-gradient(135deg, var(--accent-color), #0066cc)",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
                           color: "white",
-                          fontWeight: 600,
+                          fontWeight: 700,
                           fontSize: "14px",
                           flexShrink: 0,
                         }}
@@ -892,7 +905,8 @@ const Home: React.FC = () => {
                         style={{
                           fontWeight: 600,
                           color: "var(--text-primary)",
-                          fontSize: "14px",
+                          fontSize: "15px",
+                          flex: 1,
                         }}
                       >
                         {comment.user}
@@ -902,7 +916,10 @@ const Home: React.FC = () => {
                         style={{
                           fontSize: "12px",
                           color: "var(--text-secondary)",
-                          marginLeft: "auto",
+                          background: "var(--bg-secondary)",
+                          padding: "4px 8px",
+                          borderRadius: "12px",
+                          fontWeight: 500,
                         }}
                       >
                         {comment.time}
@@ -912,9 +929,9 @@ const Home: React.FC = () => {
                       className="comment-text"
                       style={{
                         color: "var(--text-tertiary)",
-                        lineHeight: 1.4,
+                        lineHeight: 1.5,
                         fontSize: "14px",
-                        paddingLeft: "42px",
+                        marginLeft: "48px",
                       }}
                     >
                       {comment.text}
@@ -931,8 +948,9 @@ const Home: React.FC = () => {
                 display: "flex",
                 gap: "12px",
                 marginTop: "16px",
-                paddingTop: "16px",
-                borderTop: "1px solid var(--border-color)",
+                paddingTop: "20px",
+                borderTop: "2px solid var(--border-color)",
+                alignItems: "flex-end",
               }}
             >
               <textarea
@@ -944,59 +962,52 @@ const Home: React.FC = () => {
                 className="comment-input"
                 style={{
                   flex: 1,
-                  padding: "12px 16px",
+                  padding: "14px 16px",
                   border: "1px solid var(--border-color)",
-                  borderRadius: "8px",
+                  borderRadius: "12px",
                   background: "var(--bg-tertiary)",
                   color: "var(--text-primary)",
                   fontSize: "14px",
                   resize: "none",
                   minHeight: "60px",
                   fontFamily: "inherit",
-                  transition: "border-color 0.3s",
+                  transition: "all 0.3s",
                 }}
                 onFocus={(e) => {
                   e.target.style.outline = "none";
                   e.target.style.borderColor = "var(--accent-color)";
-                  e.target.style.boxShadow = "0 0 0 2px rgba(0, 102, 204, 0.2)";
+                  e.target.style.boxShadow = "0 0 0 3px rgba(0, 102, 204, 0.2)";
+                  e.target.style.background = "var(--bg-secondary)";
                 }}
                 onBlur={(e) => {
                   e.target.style.outline = "none";
                   e.target.style.borderColor = "var(--border-color)";
                   e.target.style.boxShadow = "none";
+                  e.target.style.background = "var(--bg-tertiary)";
                 }}
               />
               <button
-                onClick={postComment}
-                disabled={postingComment || !newComment.trim()}
-                className="comment-submit"
-                style={{
-                  padding: "12px 20px",
-                  background: "var(--accent-color)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontWeight: 600,
-                  fontSize: "14px",
-                  cursor: "pointer",
-                  transition: "background 0.3s",
-                  alignSelf: "flex-end",
-                  minWidth: "100px",
-                  opacity: postingComment || !newComment.trim() ? 0.5 : 1,
-                }}
-                onMouseEnter={(e) => {
-                  if (!postingComment && newComment.trim()) {
-                    e.currentTarget.style.background = "var(--accent-hover)";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!postingComment && newComment.trim()) {
-                    e.currentTarget.style.background = "var(--accent-color)";
-                  }
-                }}
-              >
-                {postingComment ? "Posting..." : "Post"}
-              </button>
+  onClick={postComment}
+  disabled={postingComment || !newComment.trim()}
+  className="comment-submit"
+  style={{
+    padding: "14px 24px ",
+   background: postingComment || !newComment.trim()
+  ? "var(--border-color)"
+  : "var(--comment-button-bg)",
+color: "var(--comment-button-text)",
+    border: "none",
+    borderRadius: "12px",
+    fontWeight: 600,
+    fontSize: "14px",
+    cursor: postingComment || !newComment.trim() ? "not-allowed" : "pointer",
+    minWidth: "100px",
+    opacity: postingComment || !newComment.trim() ? 0.6 : 1,
+  }}
+>
+  {postingComment ? "Posting..." : "Post"}
+</button>
+
             </div>
           </div>
         </div>
@@ -1015,90 +1026,45 @@ const Home: React.FC = () => {
           }
         }
         
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        
         .comments-list::-webkit-scrollbar {
-          width: 6px;
+          width: 8px;
         }
         
         .comments-list::-webkit-scrollbar-track {
           background: var(--bg-tertiary);
-          border-radius: 3px;
+          border-radius: 4px;
         }
         
         .comments-list::-webkit-scrollbar-thumb {
           background: var(--accent-color);
-          border-radius: 3px;
+          border-radius: 4px;
         }
         
         .comments-list::-webkit-scrollbar-thumb:hover {
           background: var(--accent-hover);
         }
 
-        /* Mobile Responsive Styles for Comments */
-        @media (max-width: 768px) {
-          .comments-container {
-            width: 95%;
-            padding: 16px;
-            max-width: 95%;
-            height: 90vh;
-          }
-          
-          .comment-form {
-            flex-direction: column;
-          }
-
-          .comment-submit {
-            align-self: stretch;
-          }
-          
-          .comment-text {
-            padding-left: 0;
-            margin-top: 8px;
-          }
-          
-          .comment-header {
-            flex-wrap: wrap;
-          }
-          
-          .comment-time {
-            margin-left: 0;
-            width: 100%;
-            order: 3;
-          }
+        /* Improved scrollbar for comments container */
+        .comments-container::-webkit-scrollbar {
+          width: 8px;
         }
-
-        @media (max-width: 480px) {
-          .comments-container {
-            padding: 12px;
-          }
-          
-          .comments-title {
-            font-size: 18px;
-          }
-          
-          .comment-avatar {
-            width: 28px;
-            height: 28px;
-            font-size: 12px;
-          }
-          
-          .comment-user {
-            font-size: 13px;
-          }
-          
-          .comment-text {
-            font-size: 13px;
-          }
-          
-          .comment-input {
-            min-height: 50px;
-            padding: 10px 12px;
-            font-size: 13px;
-          }
-          
-          .comment-submit {
-            padding: 10px 16px;
-            font-size: 13px;
-          }
+        
+        .comments-container::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        
+        .comments-container::-webkit-scrollbar-thumb {
+          background: var(--border-color);
+          border-radius: 4px;
+        }
+        
+        .comments-container::-webkit-scrollbar-thumb:hover {
+          background: var(--accent-color);
         }
       `}</style>
     </main>

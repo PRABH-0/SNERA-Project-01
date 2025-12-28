@@ -39,6 +39,7 @@
   --warning-color: #ffc107;
   --icon-color: #6c757d;
   --icon-hover: #212529;
+  --button-bg: #2563eb;  
   --post-border: #dee2e6;
   --error-color: #e74c3c;
 }
@@ -80,6 +81,8 @@
   --icon-hover: #ffffff;
   --post-border: #333333;
   --error-color: #e74c3c;
+  --comment-button-bg: #3b82f6;       /* blue-500 */
+  --comment-button-text: #ffffff;
 }
 
 body {
