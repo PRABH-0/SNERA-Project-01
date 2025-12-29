@@ -239,6 +239,16 @@ public class UnitOfWork : IUnitOfWork
             return _userProfileDetail;
         }
     }
+    private IRepository<UserLink>? _userLink;
+    public IRepository<UserLink> UserLinks
+    {
+        get
+        {
+            if (_userLink == null)
+                _userLink = Repository<UserLink>();
+            return _userLink;
+        }
+    }
     public async Task BeginTransactionAsync()
     {
         if (_transaction == null)

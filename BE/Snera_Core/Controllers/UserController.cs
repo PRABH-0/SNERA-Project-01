@@ -119,6 +119,20 @@ namespace Snera_Core.Controllers
             var result = await _userService.LogoutAsync(model.RefreshToken);
             return Ok(new { message = result });
         }
+        [Authorize]
+        [HttpPost("updateProfile")]
+        public async Task<IActionResult> UpdateUserProfileAsync(Guid userId, UpdateUserProfileModel dto)
+        {
+            var result = await _userService.UpdateUserProfileAsync(userId,dto);
+            return Ok(new { message = result });
+        }
+        [Authorize]
+        [HttpPatch("profile/{userId}")]
+        public async Task<IActionResult> PatchProfile(Guid userId, UpdateUserProfileModel model)
+        {
+            var result = await _userService.PatchUserProfileAsync(userId, model);
+            return Ok(result);
+        }
 
         [HttpPost("refresh")]
         public async Task<IActionResult> RefreshToken([FromBody] string token)

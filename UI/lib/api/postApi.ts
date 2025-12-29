@@ -12,6 +12,25 @@ type CommentPayload = {
   post_Id: string | number;
   post_Comment: string;
 };
+type UpdateProfilePayload = {
+  userId: string;
+
+  name?: string;
+  title?: string;
+  profileType?: string;
+  experienceLevel?: string;
+  bio?: string;
+
+  location?: string;
+  availability?: string;
+  preferredRole?: string;
+  education?: string;
+
+  skillsHave?: string[];
+  skillsNeed?: string[];
+  projectTypes?: string[];
+  workTypes?: string[];
+};
 
 
 const postApi = {
@@ -84,6 +103,19 @@ const postApi = {
       }
     );
   },
+  getUserProfile: (userId: string) => {
+  return API.get(`/Users/profile/${userId}`);
+},
+
+updateUserProfile: (payload: UpdateProfilePayload) => {
+  const { userId, ...data } = payload;
+
+  return API.patch(
+    `/Users/profile/${userId}`,
+    data
+  );
+},
+
 
  getTrendingSkills: () => {
     return API.get("/Project/GetTrendingSkills");

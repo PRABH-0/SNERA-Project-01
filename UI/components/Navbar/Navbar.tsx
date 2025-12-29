@@ -13,6 +13,7 @@ import { getAvatarName } from "@/utils/getAvatarName";
 import { useUser } from "@/hooks/useUser";
 import { logout } from "@/lib/auth";
 
+
 const Navbar = () => {
   const router = useRouter(); 
   const { user, setUser, loadingUser } = useUser();
@@ -155,9 +156,13 @@ const Navbar = () => {
                         </svg>
                         <p>Settings</p>
                       </div>
-                      <div className=" btn box-shadow-none bg-black hover:bg-[#404040] border-none outline-none text-white p-3 m-3">
-                        View Full Profile
-                      </div>
+
+<Link href="/Profile">
+  <div className="btn box-shadow-none bg-black hover:bg-[#404040] border-none outline-none text-white p-3 m-3 cursor-pointer">
+    My Profile
+  </div>
+</Link>
+
                       <button
                         className="w-full text-center px-2 py-2 rounded hover:bg-[var(--bg-tertiary)] text-red-500 "
                         onClick={() => {

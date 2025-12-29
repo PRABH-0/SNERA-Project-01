@@ -30,6 +30,7 @@ namespace Snera_Core.Data
         public DbSet<Message> Message { get; set; }
         public DbSet<UserProfileDetail> UserProfileDetail { get; set; }
         public DbSet<UserPreference> UserPreference { get; set; }
+        public DbSet<UserLink> UserLinks { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
