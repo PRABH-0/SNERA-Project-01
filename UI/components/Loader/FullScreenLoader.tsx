@@ -2,8 +2,8 @@
 import React, { useEffect, useRef } from "react";
 import Lottie from "lottie-react";
 import type { LottieRefCurrentProps } from "lottie-react";
-
-import loadingAnimation from "../../assets/animations/loading.json";
+ 
+import loadingAnimation from "@/public/assets/animations/loading.json";
 
 const FullScreenLoader= () => {
   const lottieRef = useRef<LottieRefCurrentProps>(null);

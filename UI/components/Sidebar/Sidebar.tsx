@@ -2,7 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { HomeIcon,MatchIcon,ChatIcon,ProfileIcon,ProjectsIcon,TeamsIcon,FeedbackIcon,AboutIcon } from "./icons";
+import {
+  HomeIcon,
+  MatchIcon,
+  ChatIcon,
+  ProfileIcon,
+  ProjectsIcon,
+  TeamsIcon,
+  FeedbackIcon,
+  AboutIcon,
+} from "./icons";
 
 interface SidebarProps {
   show: boolean;
@@ -13,14 +22,14 @@ const Sidebar: React.FC<SidebarProps> = ({ show, setShowSidebar }) => {
   const pathname = usePathname();
 
   const navItems = [
-    { href: "/home", label: "Home", icon: HomeIcon },
-    { href: "/match", label: "Match", icon: MatchIcon },
-    { href: "/chat", label: "Chat", icon: ChatIcon },
-    { href: "/profile", label: "Profile", icon: ProfileIcon },
-    { href: "/projects", label: "Projects", icon: ProjectsIcon },
-    { href: "/teams", label: "Teams", icon: TeamsIcon },
-    { href: "/feedback", label: "Feedback", icon: FeedbackIcon },
-    { href: "/about", label: "About", icon: AboutIcon },
+    { href: "/Home", label: "Home", icon: HomeIcon },
+    { href: "/Match", label: "Match", icon: MatchIcon },
+    { href: "/Chat", label: "Chat", icon: ChatIcon },
+    { href: "/Profile", label: "Profile", icon: ProfileIcon },
+    { href: "/Projects", label: "Projects", icon: ProjectsIcon },
+    { href: "/Teams", label: "Teams", icon: TeamsIcon },
+    { href: "/Feedback", label: "Feedback", icon: FeedbackIcon },
+    { href: "/About", label: "About", icon: AboutIcon },
   ];
 
   return (

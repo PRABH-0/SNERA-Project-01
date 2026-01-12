@@ -7,11 +7,10 @@ import { useTheme } from "next-themes";
 import Searchbar from "../Searchbar/Searchbar";
 import HamBurger from "../Hamburger/Hamburger";
 import {ThemeToggle} from "../Theme/ThemeToggle";
-import logodark from "@/assets/snera-dark-remove-bg.png";
-import logolight from "@/assets/Snera-canva-2__1_-crop-removebg-light.png"; 
+import logodark from "@/public/assets/snera-dark-remove-bg.png";
+import logolight from "@/public/assets/Snera-canva-2__1_-crop-removebg-light.png"; 
 import { getAvatarName } from "@/utils/getAvatarName"; 
-import { useUser } from "@/hooks/useUser";
-import { logout } from "@/lib/auth";
+import { useUser } from "@/hooks/useUser"; 
 
 
 const Navbar = () => {

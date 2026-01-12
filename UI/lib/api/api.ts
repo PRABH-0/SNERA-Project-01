@@ -1,41 +1,66 @@
 "use client";
 
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 
 const API = axios.create({
-  baseURL: "https://localhost:44300/api",
+  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  withCredentials: true, // 🍪 IMPORTANT
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// ✅ SAFE interceptor (client-only)
-API.interceptors.request.use(
-  (config) => {
-    if (typeof window !== "undefined") {
+// 🔐 Request interceptor
+API.interceptors.request.use((config) => {
+  if (typeof window !== "undefined") {
+    const raw = localStorage.getItem("user");
+    if (raw) {
+      const user = JSON.parse(raw);
+      config.headers.Authorization = `Bearer ${user.accessToken}`;
+      config.headers.UserId = user.userId;
+    }
+  }
+  return config;
+});
+
+// 🔄 Response interceptor (refresh token flow)
+API.interceptors.response.use(
+  (res) => res,
+  async (error: AxiosError) => {
+    const originalRequest = error.config as any;
+
+    // ❌ refresh API khud retry na kare
+    if (originalRequest?.url?.includes("/Users/refresh")) {
+      return Promise.reject(error);
+    }
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
       try {
+        const res = await API.post("/Users/refresh");
+        const newAccessToken = (res.data as any).accessToken;
+
         const raw = localStorage.getItem("user");
-        if (raw) {
-          const user = JSON.parse(raw);
-          const token = user?.accessToken;
-          const userId = user?.userId;
+        if (!raw) throw new Error("No user");
 
-          if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-          }
+        const user = JSON.parse(raw);
 
-          if (userId) {
-            config.headers.UserId = userId;
-          }
-        }
+        localStorage.setItem(
+          "user",
+          JSON.stringify({ ...user, accessToken: newAccessToken })
+        );
+
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        return API(originalRequest);
       } catch {
-        // silent fail (no crash)
+        localStorage.removeItem("user");
+        window.location.href = "/";
       }
     }
 
-    return config;
-  },
-  (error) => Promise.reject(error)
+    return Promise.reject(error);
+  }
 );
 
 export default API;

@@ -6,20 +6,18 @@ import { ThemeToggle } from "../Theme/ThemeToggle";
 import Sign from "../auth/SignModal";
 import { useTheme } from "next-themes";
 
-import logodark from "@/assets/snera-dark-remove-bg.png";
-import logolight from "@/assets/Snera-canva-2__1_-crop-removebg-light.png";
+import logodark from "@/public/assets/snera-dark-remove-bg.png";
+import logolight from "@/public/assets/Snera-canva-2__1_-crop-removebg-light.png";
 const Hero: React.FC = () => {
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
   
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [defaultTab, setDefaultTab] = useState<"signin" | "getstarted">(
-    "signin"
-  );
+  const [defaultTab, setDefaultTab] = useState<"signin" | "getstarted"> ("signin");
+  
+    useEffect(() => {
+      setMounted(true);
+    }, []);
   
   const openAuth = (tab: "signin" | "getstarted") => {
     setDefaultTab(tab);

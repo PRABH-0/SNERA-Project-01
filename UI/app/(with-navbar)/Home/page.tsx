@@ -62,10 +62,12 @@ const Home: React.FC = () => {
   const [stateFilter, setStateFilter] = useState<string>("");
   const [hasMore, setHasMore] = useState(true);
   const [showTrending, setShowTrending] = useState(true);
-  
+
   // Comments states
   const [showComments, setShowComments] = useState(false);
-  const [currentPostId, setCurrentPostId] = useState<string | number | null>(null);
+  const [currentPostId, setCurrentPostId] = useState<string | number | null>(
+    null
+  );
   const [currentPostTitle, setCurrentPostTitle] = useState<string>("");
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
@@ -97,31 +99,33 @@ const Home: React.FC = () => {
 
   const formatTime = (utcDateString: string) => {
     if (!utcDateString) return "Just now";
-    
+
     try {
       // Parse the UTC date string
       const date = new Date(utcDateString);
       if (isNaN(date.getTime())) return "Just now";
-      
+
       // Convert to local time
-      const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-      
+      const localDate = new Date(
+        date.getTime() - date.getTimezoneOffset() * 60000
+      );
+
       const now = new Date();
       const seconds = Math.floor((now.getTime() - localDate.getTime()) / 1000);
 
       if (seconds < 60) return "Just now";
       if (seconds < 3600) {
         const mins = Math.floor(seconds / 60);
-        return `${mins} ${mins === 1 ? 'min' : 'mins'} ago`;
+        return `${mins} ${mins === 1 ? "min" : "mins"} ago`;
       }
       if (seconds < 86400) {
         const hours = Math.floor(seconds / 3600);
-        return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
+        return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
       }
 
       const days = Math.floor(seconds / 86400);
-      if (days < 15) return `${days} ${days === 1 ? 'day' : 'days'} ago`;
-      
+      if (days < 15) return `${days} ${days === 1 ? "day" : "days"} ago`;
+
       // For older dates, show the actual date
       return localDate.toLocaleDateString("en-IN", {
         day: "2-digit",
@@ -154,7 +158,7 @@ const Home: React.FC = () => {
     return colors[Math.abs(hash) % colors.length];
   };
 
-  const handleLike = async (postId: string | number) => {
+  const handleLike = async (postId: string ) => {
     try {
       const user = JSON.parse(localStorage.getItem("user") || "{}");
       if (!user?.userId) return;
@@ -163,6 +167,7 @@ const Home: React.FC = () => {
         user_Id: user.userId,
         post_Id: postId,
       });
+      console.log("Liked post:", postId);
 
       // Optimistic update
       setPosts((prev) =>
@@ -171,9 +176,7 @@ const Home: React.FC = () => {
             ? {
                 ...p,
                 isLiked: !p.isLiked,
-                likes: p.isLiked
-                  ? (p.likes || 1) - 1
-                  : (p.likes || 0) + 1,
+                likes: p.isLiked ? (p.likes || 1) - 1 : (p.likes || 0) + 1,
               }
             : p
         )
@@ -187,35 +190,43 @@ const Home: React.FC = () => {
   const fetchComments = async (postId: string | number, postData?: any) => {
     try {
       setCommentsLoading(true);
-      
+
       // First check if we have comments in the post data
-      if (postData?.comments && Array.isArray(postData.comments) && postData.comments.length > 0) {
+      if (
+        postData?.comments &&
+        Array.isArray(postData.comments) &&
+        postData.comments.length > 0
+      ) {
         console.log("Using comments from post data:", postData.comments);
-        
+
         // Transform API response to match our Comment type
-        const formattedComments: Comment[] = postData.comments.map((comment: any) => ({
-          id: comment.comment_Id || comment.id,
-          user: comment.user_Name || comment.author_Name || "User",
-          avatar: getAvatarName(comment.user_Name || comment.author_Name),
-          text: comment.comment_Text || comment.text || "",
-          time: formatTime(comment.created_At || comment.created_Timestamp || comment.date),
-          user_Id: comment.user_Id,
-          author_Name: comment.user_Name || comment.author_Name,
-          comment_Text: comment.comment_Text,
-          created_Timestamp: comment.created_At || comment.created_Timestamp
-        }));
-        
+        const formattedComments: Comment[] = postData.comments.map(
+          (comment: any) => ({
+            id: comment.comment_Id || comment.id,
+            user: comment.user_Name || comment.author_Name || "User",
+            avatar: getAvatarName(comment.user_Name || comment.author_Name),
+            text: comment.comment_Text || comment.text || "",
+            time: formatTime(
+              comment.created_At || comment.created_Timestamp || comment.date
+            ),
+            user_Id: comment.user_Id,
+            author_Name: comment.user_Name || comment.author_Name,
+            comment_Text: comment.comment_Text,
+            created_Timestamp: comment.created_At || comment.created_Timestamp,
+          })
+        );
+
         setComments(formattedComments);
         setCommentsLoading(false);
         return;
       }
-      
+
       // If no comments in post data, try to fetch from API
       const res = await postApi.getComments(String(postId));
       console.log("Fetched comments from API:", res.data);
-      
+
       let commentsData = [];
-      
+
       // Check if there's a comments array in the response
       if (Array.isArray(res.data)) {
         commentsData = res.data;
@@ -223,9 +234,14 @@ const Home: React.FC = () => {
         commentsData = res.data.comments;
       } else if (Array.isArray(res.data?.project?.comments)) {
         commentsData = res.data.project.comments;
-      } else if (res.data && typeof res.data === 'object') {
+      } else if (res.data && typeof res.data === "object") {
         // If we can't find comments array, let's check common patterns
-        const possibleCommentFields = ['comments', 'projectComments', 'postComments', 'commentList'];
+        const possibleCommentFields = [
+          "comments",
+          "projectComments",
+          "postComments",
+          "commentList",
+        ];
         for (const field of possibleCommentFields) {
           if (Array.isArray(res.data[field])) {
             commentsData = res.data[field];
@@ -233,22 +249,23 @@ const Home: React.FC = () => {
           }
         }
       }
-      
+
       // Transform API response to match our Comment type
       const formattedComments: Comment[] = commentsData.map((comment: any) => ({
         id: comment.comment_Id || comment.id,
         user: comment.user_Name || comment.author_Name || "User",
         avatar: getAvatarName(comment.user_Name || comment.author_Name),
         text: comment.comment_Text || comment.text || "",
-        time: formatTime(comment.created_At || comment.created_Timestamp || comment.date),
+        time: formatTime(
+          comment.created_At || comment.created_Timestamp || comment.date
+        ),
         user_Id: comment.user_Id,
         author_Name: comment.user_Name || comment.author_Name,
         comment_Text: comment.comment_Text,
-        created_Timestamp: comment.created_At || comment.created_Timestamp
+        created_Timestamp: comment.created_At || comment.created_Timestamp,
       }));
-      
+
       setComments(formattedComments);
-      
     } catch (err) {
       console.error("Failed to fetch comments:", err);
       // Use empty array if API fails
@@ -259,12 +276,16 @@ const Home: React.FC = () => {
   };
 
   // Open comments popup
-  const openComments = async (postId: string | number, postTitle: string = "", postData?: any) => {
+  const openComments = async (
+    postId: string | number,
+    postTitle: string = "",
+    postData?: any
+  ) => {
     setCurrentPostId(postId);
     setCurrentPostTitle(postTitle);
     setShowComments(true);
     await fetchComments(postId, postData);
-    
+
     // Focus on comment input when opened
     setTimeout(() => {
       if (commentInputRef.current) {
@@ -285,7 +306,7 @@ const Home: React.FC = () => {
   // Post a new comment
   const postComment = async () => {
     if (!newComment.trim() || !currentPostId) return;
-    
+
     try {
       setPostingComment(true);
       const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -293,7 +314,7 @@ const Home: React.FC = () => {
         alert("Please login to comment");
         return;
       }
-      
+
       const payload = {
         user_Id: user.userId,
         post_Id: currentPostId,
@@ -301,10 +322,10 @@ const Home: React.FC = () => {
       };
 
       console.log("Posting comment with payload:", payload);
-      
+
       // Call your API
       await postApi.createComment(payload);
-      
+
       // Add new comment to state (optimistic update)
       const newCommentObj: Comment = {
         id: Date.now().toString(), // Temporary ID
@@ -313,20 +334,19 @@ const Home: React.FC = () => {
         text: newComment,
         time: "Just now",
       };
-      
+
       // Add to beginning of comments array
-      setComments(prev => [newCommentObj, ...prev]);
+      setComments((prev) => [newCommentObj, ...prev]);
       setNewComment("");
-      
+
       // Update comment count in posts
-      setPosts(prev =>
-        prev.map(p =>
+      setPosts((prev) =>
+        prev.map((p) =>
           String(p.id) === String(currentPostId)
             ? { ...p, comments: (p.comments || 0) + 1 }
             : p
         )
       );
-      
     } catch (err) {
       console.error("Failed to post comment:", err);
       alert("Failed to post comment. Please try again.");
@@ -434,7 +454,7 @@ const Home: React.FC = () => {
         // Store the original project data including comments
         rawData: p,
         // Store comments if available
-        commentData: p.comments || []
+        commentData: p.comments || [],
       }));
 
       setPosts((prev) => [...prev, ...normalized]);
@@ -450,7 +470,11 @@ const Home: React.FC = () => {
     const type = postType?.toLowerCase() || "";
     if (type.includes("client") || type === "client") {
       return "badge-client";
-    } else if (type.includes("learning") || type.includes("practice") || type.includes("showcase")) {
+    } else if (
+      type.includes("learning") ||
+      type.includes("practice") ||
+      type.includes("showcase")
+    ) {
       return "badge-showcase";
     } else {
       return "badge-partner";
@@ -519,7 +543,9 @@ const Home: React.FC = () => {
                         >
                           {getBadgeText(post.postType)}
                         </span>
-                        <span>• {formatTime(post.created_Timestamp || "")}</span>
+                        <span>
+                          • {formatTime(post.created_Timestamp || "")}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -535,13 +561,24 @@ const Home: React.FC = () => {
                     </p>
 
                     {/* Skills List - Updated to match index.html */}
-                    {(post.skillsHave && post.skillsHave.length > 0) || (post.skillsNeed && post.skillsNeed.length > 0) ? (
+                    {(post.skillsHave && post.skillsHave.length > 0) ||
+                    (post.skillsNeed && post.skillsNeed.length > 0) ? (
                       <div className="post-skills">
                         {post.skillsHave?.map((skill, index) => (
-                          <span key={`have-${index}`} className="skill-tag have">{skill}</span>
+                          <span
+                            key={`have-${index}`}
+                            className="skill-tag have"
+                          >
+                            {skill}
+                          </span>
                         ))}
                         {post.skillsNeed?.map((skill, index) => (
-                          <span key={`need-${index}`} className="skill-tag need">{skill}</span>
+                          <span
+                            key={`need-${index}`}
+                            className="skill-tag need"
+                          >
+                            {skill}
+                          </span>
                         ))}
                       </div>
                     ) : null}
@@ -577,7 +614,13 @@ const Home: React.FC = () => {
                       </button>
 
                       <button
-                        onClick={() => openComments(post.id || "", post.title || "", (post as any).rawData)}
+                        onClick={() =>
+                          openComments(
+                            post.id || "",
+                            post.title || "",
+                            (post as any).rawData
+                          )
+                        }
                         className="flex items-center gap-2 text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] px-3 py-2 rounded-lg"
                       >
                         <svg
@@ -708,7 +751,7 @@ const Home: React.FC = () => {
 
       {/* Comments Popup Overlay */}
       {showComments && (
-        <div 
+        <div
           className="comments-overlay"
           style={{
             position: "fixed",
@@ -727,27 +770,28 @@ const Home: React.FC = () => {
             if (e.target === e.currentTarget) closeComments();
           }}
         >
-          <div 
+          <div
             className="comments-container"
             style={{
               background: "var(--bg-secondary)",
               borderRadius: "16px",
               padding: "24px",
-              width: "90%",
-              maxWidth: "500px",
+              width: "60vw",
+              // maxWidth: "500px",
               height: "80vh",
               maxHeight: "85vh",
               overflowY: "auto",
+              overflowX: "hidden",
               position: "relative",
               boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
               border: "1px solid var(--border-color)",
-              animation: "slideUp 0.3s ease-out",
+
               display: "flex",
               flexDirection: "column",
             }}
           >
             {/* Header */}
-            <div 
+            <div
               className="comments-header"
               style={{
                 display: "flex",
@@ -759,7 +803,7 @@ const Home: React.FC = () => {
               }}
             >
               <div style={{ flex: 1 }}>
-                <h3 
+                <h3
                   className="comments-title"
                   style={{
                     fontSize: "22px",
@@ -771,11 +815,13 @@ const Home: React.FC = () => {
                   Comments
                 </h3>
                 {currentPostTitle && (
-                  <p style={{
-                    fontSize: "14px",
-                    color: "var(--text-secondary)",
-                    opacity: 0.8,
-                  }}>
+                  <p
+                    style={{
+                      fontSize: "14px",
+                      color: "var(--text-secondary)",
+                      opacity: 0.8,
+                    }}
+                  >
                     On: <strong>{currentPostTitle}</strong>
                   </p>
                 )}
@@ -812,7 +858,7 @@ const Home: React.FC = () => {
             </div>
 
             {/* Comments List */}
-            <div 
+            <div
               className="comments-list"
               style={{
                 marginBottom: "20px",
@@ -822,7 +868,7 @@ const Home: React.FC = () => {
               }}
             >
               {commentsLoading ? (
-                <div 
+                <div
                   className="comment-item"
                   style={{
                     textAlign: "center",
@@ -834,7 +880,7 @@ const Home: React.FC = () => {
                   Loading comments...
                 </div>
               ) : comments.length === 0 ? (
-                <div 
+                <div
                   className="comment-item"
                   style={{
                     textAlign: "center",
@@ -860,15 +906,16 @@ const Home: React.FC = () => {
                       transition: "all 0.2s",
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = "translateX(4px)";
-                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.1)";
+                      
+                      e.currentTarget.style.boxShadow =
+                        "0 4px 12px rgba(0, 0, 0, 0.1)";
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "translateX(0)";
+                    
                       e.currentTarget.style.boxShadow = "none";
                     }}
                   >
-                    <div 
+                    <div
                       className="comment-header"
                       style={{
                         display: "flex",
@@ -877,13 +924,14 @@ const Home: React.FC = () => {
                         marginBottom: "8px",
                       }}
                     >
-                      <div 
+                      <div
                         className="comment-avatar"
                         style={{
                           width: "36px",
                           height: "36px",
                           borderRadius: "50%",
-                          background: "linear-gradient(135deg, var(--accent-color), #0066cc)",
+                          background:
+                            "linear-gradient(135deg, var(--accent-color), #0066cc)",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -895,7 +943,7 @@ const Home: React.FC = () => {
                       >
                         {comment.avatar || "U"}
                       </div>
-                      <div 
+                      <div
                         className="comment-user"
                         style={{
                           fontWeight: 600,
@@ -906,7 +954,7 @@ const Home: React.FC = () => {
                       >
                         {comment.user}
                       </div>
-                      <div 
+                      <div
                         className="comment-time"
                         style={{
                           fontSize: "12px",
@@ -920,7 +968,7 @@ const Home: React.FC = () => {
                         {comment.time}
                       </div>
                     </div>
-                    <div 
+                    <div
                       className="comment-text"
                       style={{
                         color: "var(--text-tertiary)",
@@ -937,7 +985,7 @@ const Home: React.FC = () => {
             </div>
 
             {/* Comment Form */}
-            <div 
+            <div
               className="comment-form"
               style={{
                 display: "flex",
@@ -987,15 +1035,19 @@ const Home: React.FC = () => {
                 className="comment-submit"
                 style={{
                   padding: "14px 24px",
-                  background: postingComment || !newComment.trim()
-                    ? "var(--border-color)"
-                    : "var(--accent-color)",
+                  background:
+                    postingComment || !newComment.trim()
+                      ? "var(--border-color)"
+                      : "var(--accent-color)",
                   color: "white",
                   border: "none",
                   borderRadius: "12px",
                   fontWeight: 600,
                   fontSize: "14px",
-                  cursor: postingComment || !newComment.trim() ? "not-allowed" : "pointer",
+                  cursor:
+                    postingComment || !newComment.trim()
+                      ? "not-allowed"
+                      : "pointer",
                   minWidth: "100px",
                   opacity: postingComment || !newComment.trim() ? 0.6 : 1,
                 }}

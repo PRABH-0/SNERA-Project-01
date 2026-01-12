@@ -35,23 +35,20 @@ const Sign: React.FC<SignProps> = ({ isOpen, onClose, defaultTab = "signin" }) =
     });
 
     useEffect(() => {
-        if (isOpen) {
-            document.body.style.overflow = "hidden";
-            setActiveTab(defaultTab);
-        } else {
-            document.body.style.overflow = "auto";
-        }
-        return () => {
-            document.body.style.overflow = "auto";
-        };
-    }, [isOpen, defaultTab]);
-    useEffect(() => {
-        if (loading) {
-            document.body.style.overflow = "hidden";
-        } else if (!isOpen) {
-            document.body.style.overflow = "auto";
-        }
-    }, [loading, isOpen]);
+  setActiveTab(defaultTab);
+}, [defaultTab]);
+
+   useEffect(() => {
+  if (isOpen || loading) {
+    document.body.style.overflow = "hidden";
+  } else {
+    document.body.style.overflow = "auto";
+  }
+
+  return () => {
+    document.body.style.overflow = "auto";
+  };
+}, [isOpen, loading]);
 
 
      const router = useRouter();
@@ -126,41 +123,36 @@ const Sign: React.FC<SignProps> = ({ isOpen, onClose, defaultTab = "signin" }) =
     };
 
     const handleLoginSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        setLoginError("");
-        try {
-            const res = await userApi.login(loginData); 
+  e.preventDefault();
+  setLoading(true);
+  setLoginError("");
 
-            const token =
-                res.data.accessToken ||
-                res.data.token ||
-                res.data.jwt ||
-                res.data.jwtToken ||
-                res.data.data?.token;
-                 if (!token) {
-      console.error("❌ No token found in login API response");
-      return;
+  try {
+    const res = await userApi.login(loginData);
+
+    const { userId, userEmail, singerName, accessToken } = res.data;
+
+    if (!accessToken) {
+      throw new Error("Access token missing");
     }
-            if (token) {
-                localStorage.setItem("token", token);
-                const userObj = {
-                    userName: res.data.userName  || "",
-                    email: res.data.userEmail ||   loginData.email,
-                    userId: res.data.userId ,
-                    accessToken: token
-                };
-                 localStorage.setItem("user", JSON.stringify(userObj)); 
-                router.push("/Home");
 
-            }
-        } catch (err: any) {
-            setLoginError("Invalid email or password!");
-        }
-        finally {
-            setLoading(false);
-        }
+    const userObj = {
+      userId,
+      email: userEmail,
+      userName: singerName,
+      accessToken,
     };
+
+    localStorage.setItem("user", JSON.stringify(userObj));
+
+    router.push("/Home");
+  } catch (err) {
+    setLoginError("Invalid email or password!");
+  } finally {
+    setLoading(false);
+  }
+};
+
     if (!isOpen) return null;
 
     return (<>
@@ -169,11 +161,12 @@ const Sign: React.FC<SignProps> = ({ isOpen, onClose, defaultTab = "signin" }) =
         <div
             id="overlay"
             onClick={handleOverlayClick}
-            className="fixed inset-0 flex justify-center items-start pt-10 bg-[var(--overlay-bg)] backdrop-blur-[5px] z-50 overflow-auto"
+            className="fixed inset-0 flex justify-center items-start  bg-[var(--overlay-bg)] backdrop-blur-[5px] z-50  "
         >
             <div 
             
-            className={`bg-[var(--bg-primary)] p-8 rounded-xl shadow-lg w-[80vw] h-[550px] relative overflow-auto backdrop-blur-[5px]  ${loading ? "pointer-events-none" : ""} `}>
+            className={`bg-[var(--bg-primary)] p-8 rounded-xl shadow-lg w-[80vw] h-[550px] 
+                        relative overflow-auto backdrop-blur-[5px]  ${loading ? "pointer-events-none" : ""} `}>
 
 
                 <button

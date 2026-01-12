@@ -14,7 +14,7 @@ type Props = {
 export default function HomeLayout({ children }: Props) {
   return (
     <>
-      <Navbar />
+      
       {children}
     </>
   );

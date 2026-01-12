@@ -7,7 +7,21 @@ import postApi from "@/lib/api/postApi";
 
 type UserType = "student" | "professional" | "business-owner";
 type ExperienceLevel = "0-1 years" | "1-3 years" | "3-5 years" | "5+ years";
-type ProjectType = "web-apps" | "saas" | "open-source" | "client" | "mobile" | "startups" | "enterprise" | "ecommerce" | "social" | "data-viz" | "ai-ml" | "iot" | "blockchain" | "gaming";
+type ProjectType =
+  | "web-apps"
+  | "saas"
+  | "open-source"
+  | "client"
+  | "mobile"
+  | "startups"
+  | "enterprise"
+  | "ecommerce"
+  | "social"
+  | "data-viz"
+  | "ai-ml"
+  | "iot"
+  | "blockchain"
+  | "gaming";
 
 interface UserProfile {
   name: string;
@@ -45,12 +59,14 @@ const ProfilePage: React.FC = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<"overview" | "projects">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "projects">(
+    "overview"
+  );
   const [isBioExpanded, setIsBioExpanded] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showEditSectionModal, setShowEditSectionModal] = useState(false);
   const [currentSection, setCurrentSection] = useState<string>("");
-  
+
   const [profile, setProfile] = useState<UserProfile>({
     name: "John Smith",
     title: "Frontend Developer & UI Designer",
@@ -66,13 +82,22 @@ const ProfilePage: React.FC = () => {
     email: "john.smith@email.com",
     github: "github.com/johnsmith",
     linkedin: "linkedin.com/in/johnsmith",
-    skillsHave: ["React", "JavaScript", "TypeScript", "HTML/CSS", "UI/UX", "Figma", "Git", "Responsive"],
+    skillsHave: [
+      "React",
+      "JavaScript",
+      "TypeScript",
+      "HTML/CSS",
+      "UI/UX",
+      "Figma",
+      "Git",
+      "Responsive",
+    ],
     skillsNeed: ["Node.js", "Backend", "Database", "DevOps", "AWS"],
     projectTypes: ["Web Applications", "SaaS Products", "Open Source Projects"],
     stats: {
       projects: 12,
       connections: 47,
-      years: 3
+      years: 3,
     },
     projects: [
       {
@@ -80,48 +105,48 @@ const ProfilePage: React.FC = () => {
         name: "TaskSync App",
         description: "Collaborative task management with real-time updates",
         status: "active",
-        skills: ["React", "Firebase", "Real-time"]
+        skills: ["React", "Firebase", "Real-time"],
       },
       {
         id: 2,
         name: "Portfolio Builder",
         description: "Drag-and-drop portfolio website builder",
         status: "completed",
-        skills: ["Vue.js", "Node.js", "MongoDB"]
+        skills: ["Vue.js", "Node.js", "MongoDB"],
       },
       {
         id: 3,
         name: "LearnCode Platform",
         description: "Interactive coding tutorials with live editing",
         status: "completed",
-        skills: ["React", "Express", "PostgreSQL"]
+        skills: ["React", "Express", "PostgreSQL"],
       },
       {
         id: 4,
         name: "E-commerce Dashboard",
         description: "Analytics dashboard for online stores",
         status: "completed",
-        skills: ["React", "D3.js", "REST API"]
-      }
-    ]
+        skills: ["React", "D3.js", "REST API"],
+      },
+    ],
   });
-const openEditProfile = () => {
-  setEditForm({
-    name: profile.name,
-    title: profile.title,
-    userType: profile.userType,
-    experienceLevel: profile.experienceLevel,
-  });
+  const openEditProfile = () => {
+    setEditForm({
+      name: profile.name,
+      title: profile.title,
+      userType: profile.userType,
+      experienceLevel: profile.experienceLevel,
+    });
 
-  setShowEditProfileModal(true);
-};
+    setShowEditProfileModal(true);
+  };
 
   // Form states for editing
   const [editForm, setEditForm] = useState({
     name: "",
     title: "",
     userType: "professional" as UserType,
-    experienceLevel: "3-5 years" as ExperienceLevel
+    experienceLevel: "3-5 years" as ExperienceLevel,
   });
 
   const [skillsHaveInput, setSkillsHaveInput] = useState("");
@@ -138,7 +163,7 @@ const openEditProfile = () => {
     joinDate: "",
     email: "",
     github: "",
-    linkedin: ""
+    linkedin: "",
   });
 
   useEffect(() => {
@@ -166,9 +191,9 @@ const openEditProfile = () => {
 
   const handleOpenSectionModal = (section: string) => {
     setCurrentSection(section);
-    
+
     // Initialize form data based on section
-    switch(section) {
+    switch (section) {
       case "skills":
         // Skills are already in state
         break;
@@ -189,11 +214,11 @@ const openEditProfile = () => {
           joinDate: profile.joinDate,
           email: profile.email,
           github: profile.github,
-          linkedin: profile.linkedin
+          linkedin: profile.linkedin,
         });
         break;
     }
-    
+
     setShowEditSectionModal(true);
   };
 
@@ -255,92 +280,101 @@ const openEditProfile = () => {
   });
 
   const handleSaveSection = async () => {
-  try {
-    if (!user?.userId) return;
+    try {
+      if (!user?.userId) return;
 
-    setLoading(true);
+      setLoading(true);
 
-    const payload: any = { userId: user.userId };
+      const payload: any = { userId: user.userId };
 
-    if (currentSection === "skills") {
-      payload.skillsHave = profile.skillsHave;
-      payload.skillsNeed = profile.skillsNeed;
+      if (currentSection === "skills") {
+        payload.skillsHave = profile.skillsHave;
+        payload.skillsNeed = profile.skillsNeed;
+      }
+
+      if (currentSection === "bio") {
+        payload.bio = editBio;
+      }
+
+      if (currentSection === "preferences") {
+        payload.projectTypes = editProjectTypes;
+      }
+
+      if (currentSection === "details") {
+        payload.location = editDetails.location;
+        payload.availability = editDetails.availability;
+        payload.preferredRole = editDetails.preferredRole;
+        payload.education = editDetails.education;
+      }
+
+      if (Object.keys(payload).length === 1) return;
+
+      await postApi.updateUserProfile(payload);
+
+      const res = await postApi.getUserProfile(user.userId);
+      setProfile(mapApiProfileToUI(res.data));
+
+      setShowEditSectionModal(false);
+    } catch (err) {
+      console.error("Section update failed", err);
+    } finally {
+      setLoading(false);
     }
-
-    if (currentSection === "bio") {
-      payload.bio = editBio;
-    }
-
-    if (currentSection === "preferences") {
-      payload.projectTypes = editProjectTypes;
-    }
-
-    if (currentSection === "details") {
-      payload.location = editDetails.location;
-      payload.availability = editDetails.availability;
-      payload.preferredRole = editDetails.preferredRole;
-      payload.education = editDetails.education;
-    }
-
-    if (Object.keys(payload).length === 1) return;
-
-    await postApi.updateUserProfile(payload);
-
-    const res = await postApi.getUserProfile(user.userId);
-    setProfile(mapApiProfileToUI(res.data));
-
-    setShowEditSectionModal(false);
-  } catch (err) {
-    console.error("Section update failed", err);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   // Add project type function
   const addProjectType = () => {
-    if (editProjectTypeInput.trim() && !editProjectTypes.includes(editProjectTypeInput.trim())) {
-      setEditProjectTypes(prev => [...prev, editProjectTypeInput.trim()]);
+    if (
+      editProjectTypeInput.trim() &&
+      !editProjectTypes.includes(editProjectTypeInput.trim())
+    ) {
+      setEditProjectTypes((prev) => [...prev, editProjectTypeInput.trim()]);
       setEditProjectTypeInput("");
     }
   };
 
   // Remove project type function
   const removeProjectType = (type: string) => {
-    setEditProjectTypes(prev => prev.filter(t => t !== type));
+    setEditProjectTypes((prev) => prev.filter((t) => t !== type));
   };
 
   const addSkillHave = () => {
-    if (skillsHaveInput.trim() && !profile.skillsHave.includes(skillsHaveInput.trim())) {
-      setProfile(prev => ({
+    if (
+      skillsHaveInput.trim() &&
+      !profile.skillsHave.includes(skillsHaveInput.trim())
+    ) {
+      setProfile((prev) => ({
         ...prev,
-        skillsHave: [...prev.skillsHave, skillsHaveInput.trim()]
+        skillsHave: [...prev.skillsHave, skillsHaveInput.trim()],
       }));
       setSkillsHaveInput("");
     }
   };
 
   const addSkillNeed = () => {
-    if (skillsNeedInput.trim() && !profile.skillsNeed.includes(skillsNeedInput.trim())) {
-      setProfile(prev => ({
+    if (
+      skillsNeedInput.trim() &&
+      !profile.skillsNeed.includes(skillsNeedInput.trim())
+    ) {
+      setProfile((prev) => ({
         ...prev,
-        skillsNeed: [...prev.skillsNeed, skillsNeedInput.trim()]
+        skillsNeed: [...prev.skillsNeed, skillsNeedInput.trim()],
       }));
       setSkillsNeedInput("");
     }
   };
 
   const removeSkillHave = (skill: string) => {
-    setProfile(prev => ({
+    setProfile((prev) => ({
       ...prev,
-      skillsHave: prev.skillsHave.filter(s => s !== skill)
+      skillsHave: prev.skillsHave.filter((s) => s !== skill),
     }));
   };
 
   const removeSkillNeed = (skill: string) => {
-    setProfile(prev => ({
+    setProfile((prev) => ({
       ...prev,
-      skillsNeed: prev.skillsNeed.filter(s => s !== skill)
+      skillsNeed: prev.skillsNeed.filter((s) => s !== skill),
     }));
   };
 
@@ -348,21 +382,21 @@ const openEditProfile = () => {
   const getProjectTypeLabel = (type: string) => {
     const projectTypeLabels: Record<string, string> = {
       "web-apps": "Web Applications",
-      "saas": "SaaS Products",
+      saas: "SaaS Products",
       "open-source": "Open Source",
-      "client": "Client Projects",
-      "mobile": "Mobile Apps",
-      "startups": "Startups",
-      "enterprise": "Enterprise Software",
-      "ecommerce": "E-commerce",
-      "social": "Social Platforms",
+      client: "Client Projects",
+      mobile: "Mobile Apps",
+      startups: "Startups",
+      enterprise: "Enterprise Software",
+      ecommerce: "E-commerce",
+      social: "Social Platforms",
       "data-viz": "Data Visualization",
       "ai-ml": "AI/ML Projects",
-      "iot": "IoT Projects",
-      "blockchain": "Blockchain",
-      "gaming": "Gaming"
+      iot: "IoT Projects",
+      blockchain: "Blockchain",
+      gaming: "Gaming",
     };
-    
+
     return projectTypeLabels[type] || type;
   };
 
@@ -390,7 +424,9 @@ const openEditProfile = () => {
               </div>
               <div className="flex-1 pb-2">
                 <h1 className="text-[28px] font-bold mb-2">{profile.name}</h1>
-                <p className="text-[16px] text-[var(--text-secondary)] mb-4">{profile.title}</p>
+                <p className="text-[16px] text-[var(--text-secondary)] mb-4">
+                  {profile.title}
+                </p>
                 <div className="inline-block bg-[var(--badge-partner-text)] text-white px-3 py-1 rounded-full text-[12px] font-medium mr-2 mb-2">
                   Professional
                 </div>
@@ -399,16 +435,28 @@ const openEditProfile = () => {
                 </div>
                 <div className="flex gap-6 mt-4">
                   <div className="text-center">
-                    <div className="text-[20px] font-semibold">{profile.stats.projects}</div>
-                    <div className="text-[14px] text-[var(--text-secondary)]">Projects</div>
+                    <div className="text-[20px] font-semibold">
+                      {profile.stats.projects}
+                    </div>
+                    <div className="text-[14px] text-[var(--text-secondary)]">
+                      Projects
+                    </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-[20px] font-semibold">{profile.stats.connections}</div>
-                    <div className="text-[14px] text-[var(--text-secondary)]">Connections</div>
+                    <div className="text-[20px] font-semibold">
+                      {profile.stats.connections}
+                    </div>
+                    <div className="text-[14px] text-[var(--text-secondary)]">
+                      Connections
+                    </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-[20px] font-semibold">{profile.stats.years}</div>
-                    <div className="text-[14px] text-[var(--text-secondary)]">Years</div>
+                    <div className="text-[20px] font-semibold">
+                      {profile.stats.years}
+                    </div>
+                    <div className="text-[14px] text-[var(--text-secondary)]">
+                      Years
+                    </div>
                   </div>
                 </div>
               </div>
@@ -467,7 +515,9 @@ const openEditProfile = () => {
                         Edit
                       </button>
                     </div>
-                    <div className="text-[13px] text-[var(--text-secondary)] font-medium mb-2">Skills I Have</div>
+                    <div className="text-[13px] text-[var(--text-secondary)] font-medium mb-2">
+                      Skills I Have
+                    </div>
                     <div className="flex flex-wrap gap-2 mb-4">
                       {profile.skillsHave.map((skill, index) => (
                         <span
@@ -478,7 +528,9 @@ const openEditProfile = () => {
                         </span>
                       ))}
                     </div>
-                    <div className="text-[13px] text-[var(--text-secondary)] font-medium mb-2">Skills I Need</div>
+                    <div className="text-[13px] text-[var(--text-secondary)] font-medium mb-2">
+                      Skills I Need
+                    </div>
                     <div className="flex flex-wrap gap-2">
                       {profile.skillsNeed.map((skill, index) => (
                         <span
@@ -502,14 +554,18 @@ const openEditProfile = () => {
                         Edit
                       </button>
                     </div>
-                    <p className={`text-[14px] text-[var(--text-tertiary)] leading-relaxed ${isBioExpanded ? '' : 'max-h-[120px] overflow-hidden'}`}>
+                    <p
+                      className={`text-[14px] text-[var(--text-tertiary)] leading-relaxed ${
+                        isBioExpanded ? "" : "max-h-[120px] overflow-hidden"
+                      }`}
+                    >
                       {profile.bio}
                     </p>
                     <button
                       onClick={() => setIsBioExpanded(!isBioExpanded)}
                       className="text-[13px] text-[var(--accent-color)] mt-2 hover:text-[var(--accent-hover)] transition-colors"
                     >
-                      {isBioExpanded ? 'Read less' : 'Read more'}
+                      {isBioExpanded ? "Read less" : "Read more"}
                     </button>
                   </div>
                 </div>
@@ -519,7 +575,9 @@ const openEditProfile = () => {
                   {/* Preferences Section */}
                   <div className="bg-[var(--bg-tertiary)] rounded-lg p-5 border border-[var(--border-color)]">
                     <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-[16px] font-semibold">Project Preferences</h3>
+                      <h3 className="text-[16px] font-semibold">
+                        Project Preferences
+                      </h3>
                       <button
                         onClick={() => handleOpenSectionModal("preferences")}
                         className="text-[13px] text-[var(--accent-color)] font-medium hover:text-[var(--accent-hover)] transition-colors"
@@ -527,7 +585,9 @@ const openEditProfile = () => {
                         Edit
                       </button>
                     </div>
-                    <div className="text-[13px] text-[var(--text-secondary)] font-medium mb-2">Project Types</div>
+                    <div className="text-[13px] text-[var(--text-secondary)] font-medium mb-2">
+                      Project Types
+                    </div>
                     <div className="flex flex-wrap gap-2">
                       {profile.projectTypes.map((type, index) => (
                         <span
@@ -553,45 +613,87 @@ const openEditProfile = () => {
                     </div>
                     <div className="grid grid-cols-2 gap-4 mb-6">
                       <div>
-                        <div className="text-[12px] text-[var(--text-secondary)] font-medium mb-1">Location</div>
-                        <div className="text-[14px] font-medium">{profile.location}</div>
+                        <div className="text-[12px] text-[var(--text-secondary)] font-medium mb-1">
+                          Location
+                        </div>
+                        <div className="text-[14px] font-medium">
+                          {profile.location}
+                        </div>
                       </div>
                       <div>
-                        <div className="text-[12px] text-[var(--text-secondary)] font-medium mb-1">Experience</div>
-                        <div className="text-[14px] font-medium">{profile.experience}</div>
+                        <div className="text-[12px] text-[var(--text-secondary)] font-medium mb-1">
+                          Experience
+                        </div>
+                        <div className="text-[14px] font-medium">
+                          {profile.experience}
+                        </div>
                       </div>
                       <div>
-                        <div className="text-[12px] text-[var(--text-secondary)] font-medium mb-1">Availability</div>
-                        <div className="text-[14px] font-medium">{profile.availability}</div>
+                        <div className="text-[12px] text-[var(--text-secondary)] font-medium mb-1">
+                          Availability
+                        </div>
+                        <div className="text-[14px] font-medium">
+                          {profile.availability}
+                        </div>
                       </div>
                       <div>
-                        <div className="text-[12px] text-[var(--text-secondary)] font-medium mb-1">Preferred Role</div>
-                        <div className="text-[14px] font-medium">{profile.preferredRole}</div>
+                        <div className="text-[12px] text-[var(--text-secondary)] font-medium mb-1">
+                          Preferred Role
+                        </div>
+                        <div className="text-[14px] font-medium">
+                          {profile.preferredRole}
+                        </div>
                       </div>
                       <div>
-                        <div className="text-[12px] text-[var(--text-secondary)] font-medium mb-1">Education</div>
-                        <div className="text-[14px] font-medium">{profile.education}</div>
+                        <div className="text-[12px] text-[var(--text-secondary)] font-medium mb-1">
+                          Education
+                        </div>
+                        <div className="text-[14px] font-medium">
+                          {profile.education}
+                        </div>
                       </div>
                       <div>
-                        <div className="text-[12px] text-[var(--text-secondary)] font-medium mb-1">Joined</div>
-                        <div className="text-[14px] font-medium">{profile.joinDate}</div>
+                        <div className="text-[12px] text-[var(--text-secondary)] font-medium mb-1">
+                          Joined
+                        </div>
+                        <div className="text-[14px] font-medium">
+                          {profile.joinDate}
+                        </div>
                       </div>
                     </div>
                     <div className="space-y-3">
-                      <a href={`mailto:${profile.email}`} className="flex items-center gap-2 text-[13px] text-[var(--accent-color)] hover:text-[var(--accent-hover)] transition-colors">
-                        <svg className="w-4 h-4 fill-[var(--accent-color)]" viewBox="0 0 24 24">
+                      <a
+                        href={`mailto:${profile.email}`}
+                        className="flex items-center gap-2 text-[13px] text-[var(--accent-color)] hover:text-[var(--accent-hover)] transition-colors"
+                      >
+                        <svg
+                          className="w-4 h-4 fill-[var(--accent-color)]"
+                          viewBox="0 0 24 24"
+                        >
                           <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
                         </svg>
                         {profile.email}
                       </a>
-                      <a href={`https://${profile.github}`} className="flex items-center gap-2 text-[13px] text-[var(--accent-color)] hover:text-[var(--accent-hover)] transition-colors">
-                        <svg className="w-4 h-4 fill-[var(--accent-color)]" viewBox="0 0 24 24">
+                      <a
+                        href={`https://${profile.github}`}
+                        className="flex items-center gap-2 text-[13px] text-[var(--accent-color)] hover:text-[var(--accent-hover)] transition-colors"
+                      >
+                        <svg
+                          className="w-4 h-4 fill-[var(--accent-color)]"
+                          viewBox="0 0 24 24"
+                        >
                           <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
                         </svg>
                         {profile.github}
                       </a>
-                      <a href={`https://${profile.linkedin}`} className="flex items-center gap-2 text-[13px] text-[var(--accent-color)] hover:text-[var(--accent-hover)] transition-colors">
-                        <svg className="w-4 h-4 fill-[var(--accent-color)]" viewBox="0 0 24 24">
+                      <a
+                        href={`https://${profile.linkedin}`}
+                        className="flex items-center gap-2 text-[13px] text-[var(--accent-color)] hover:text-[var(--accent-hover)] transition-colors"
+                      >
+                        <svg
+                          className="w-4 h-4 fill-[var(--accent-color)]"
+                          viewBox="0 0 24 24"
+                        >
                           <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
                         </svg>
                         {profile.linkedin}
@@ -606,36 +708,62 @@ const openEditProfile = () => {
                 <div className="grid grid-cols-3 gap-4 mb-6">
                   <div className="bg-[var(--card-bg)] rounded-lg p-4 text-center border border-[var(--border-color)]">
                     <div className="text-[24px] font-bold mb-1">24</div>
-                    <div className="text-[12px] text-[var(--text-secondary)]">Total Projects</div>
+                    <div className="text-[12px] text-[var(--text-secondary)]">
+                      Total Projects
+                    </div>
                   </div>
                   <div className="bg-[var(--card-bg)] rounded-lg p-4 text-center border border-[var(--border-color)]">
                     <div className="text-[24px] font-bold mb-1">89%</div>
-                    <div className="text-[12px] text-[var(--text-secondary)]">Completion Rate</div>
+                    <div className="text-[12px] text-[var(--text-secondary)]">
+                      Completion Rate
+                    </div>
                   </div>
                   <div className="bg-[var(--card-bg)] rounded-lg p-4 text-center border border-[var(--border-color)]">
                     <div className="text-[24px] font-bold mb-1">6</div>
-                    <div className="text-[12px] text-[var(--text-secondary)]">Active Collaborations</div>
+                    <div className="text-[12px] text-[var(--text-secondary)]">
+                      Active Collaborations
+                    </div>
                   </div>
                 </div>
                 <div className="bg-[var(--bg-tertiary)] rounded-lg p-5 border border-[var(--border-color)]">
-                  <h3 className="text-[16px] font-semibold mb-4">All Projects</h3>
+                  <h3 className="text-[16px] font-semibold mb-4">
+                    All Projects
+                  </h3>
                   <div className="space-y-3">
                     {profile.projects.map((project) => (
-                      <div key={project.id} className="bg-[var(--card-bg)] rounded-lg p-4 border border-[var(--border-color)] hover:-translate-y-[2px] transition-all">
+                      <div
+                        key={project.id}
+                        className="bg-[var(--card-bg)] rounded-lg p-4 border border-[var(--border-color)] hover:-translate-y-[2px] transition-all"
+                      >
                         <div className="flex items-start gap-3">
                           <div className="w-8 h-8 rounded bg-[var(--bg-tertiary)] flex items-center justify-center text-[12px] font-semibold text-[var(--text-secondary)]">
                             {project.name.substring(0, 2).toUpperCase()}
                           </div>
                           <div className="flex-1">
-                            <div className="text-[14px] font-semibold mb-1">{project.name}</div>
-                            <p className="text-[12px] text-[var(--text-tertiary)] mb-2 leading-relaxed">{project.description}</p>
+                            <div className="text-[14px] font-semibold mb-1">
+                              {project.name}
+                            </div>
+                            <p className="text-[12px] text-[var(--text-tertiary)] mb-2 leading-relaxed">
+                              {project.description}
+                            </p>
                             <div className="flex items-center gap-3">
-                              <span className={`text-[11px] px-2 py-1 rounded-full ${project.status === 'active' ? 'bg-[#e7f4e4] text-[#2d8515]' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'}`}>
-                                {project.status === 'active' ? 'Active' : 'Completed'}
+                              <span
+                                className={`text-[11px] px-2 py-1 rounded-full ${
+                                  project.status === "active"
+                                    ? "bg-[#e7f4e4] text-[#2d8515]"
+                                    : "bg-[var(--bg-tertiary)] text-[var(--text-secondary)]"
+                                }`}
+                              >
+                                {project.status === "active"
+                                  ? "Active"
+                                  : "Completed"}
                               </span>
                               <div className="flex flex-wrap gap-1">
                                 {project.skills.map((skill, index) => (
-                                  <span key={index} className="bg-[rgba(0,102,204,0.1)] text-[var(--accent-color)] text-[10px] px-2 py-1 rounded-full">
+                                  <span
+                                    key={index}
+                                    className="bg-[rgba(0,102,204,0.1)] text-[var(--accent-color)] text-[10px] px-2 py-1 rounded-full"
+                                  >
                                     {skill}
                                   </span>
                                 ))}
@@ -664,50 +792,96 @@ const openEditProfile = () => {
               &times;
             </button>
             <h2 className="text-[20px] font-semibold mb-5">Edit Profile</h2>
-            <form onSubmit={(e) => { e.preventDefault(); handleSaveProfile(); }}>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSaveProfile();
+              }}
+            >
               <div className="space-y-4">
                 <div>
-                  <label className="block text-[14px] font-semibold mb-2">Full Name</label>
+                  <label className="block text-[14px] font-semibold mb-2">
+                    Full Name
+                  </label>
                   <input
                     type="text"
                     className="w-full p-3 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg"
                     value={editForm.name}
-                    onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, name: e.target.value })
+                    }
                   />
                 </div>
                 <div>
-                  <label className="block text-[14px] font-semibold mb-2">Current Role/Title</label>
+                  <label className="block text-[14px] font-semibold mb-2">
+                    Current Role/Title
+                  </label>
                   <input
                     type="text"
                     className="w-full p-3 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg"
                     value={editForm.title}
-                    onChange={(e) => setEditForm({...editForm, title: e.target.value})}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, title: e.target.value })
+                    }
                   />
                 </div>
                 <div>
-                  <label className="block text-[14px] font-semibold mb-2">Profile Type</label>
+                  <label className="block text-[14px] font-semibold mb-2">
+                    Profile Type
+                  </label>
                   <div className="flex gap-2">
-                    {(['student', 'professional', 'business-owner'] as UserType[]).map((type) => (
+                    {(
+                      [
+                        "student",
+                        "professional",
+                        "business-owner",
+                      ] as UserType[]
+                    ).map((type) => (
                       <button
                         key={type}
                         type="button"
-                        className={`flex-1 p-3 rounded-lg border ${editForm.userType === type ? 'border-[var(--badge-partner-text)] bg-[var(--badge-partner-text)] text-white' : 'border-[var(--border-color)] bg-[var(--bg-tertiary)]'}`}
-                        onClick={() => setEditForm({...editForm, userType: type})}
+                        className={`flex-1 p-3 rounded-lg border ${
+                          editForm.userType === type
+                            ? "border-[var(--badge-partner-text)] bg-[var(--badge-partner-text)] text-white"
+                            : "border-[var(--border-color)] bg-[var(--bg-tertiary)]"
+                        }`}
+                        onClick={() =>
+                          setEditForm({ ...editForm, userType: type })
+                        }
                       >
-                        {type === 'student' ? 'Student/Fresher' : type === 'professional' ? 'Professional' : 'Business Owner'}
+                        {type === "student"
+                          ? "Student/Fresher"
+                          : type === "professional"
+                          ? "Professional"
+                          : "Business Owner"}
                       </button>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[14px] font-semibold mb-2">Experience Level</label>
+                  <label className="block text-[14px] font-semibold mb-2">
+                    Experience Level
+                  </label>
                   <div className="grid grid-cols-2 gap-2">
-                    {(['0-1 years', '1-3 years', '3-5 years', '5+ years'] as ExperienceLevel[]).map((level) => (
+                    {(
+                      [
+                        "0-1 years",
+                        "1-3 years",
+                        "3-5 years",
+                        "5+ years",
+                      ] as ExperienceLevel[]
+                    ).map((level) => (
                       <button
                         key={level}
                         type="button"
-                        className={`p-3 rounded-lg border ${editForm.experienceLevel === level ? 'border-[var(--badge-partner-text)] bg-[var(--badge-partner-text)] text-white' : 'border-[var(--border-color)] bg-[var(--bg-tertiary)]'}`}
-                        onClick={() => setEditForm({...editForm, experienceLevel: level})}
+                        className={`p-3 rounded-lg border ${
+                          editForm.experienceLevel === level
+                            ? "border-[var(--badge-partner-text)] bg-[var(--badge-partner-text)] text-white"
+                            : "border-[var(--border-color)] bg-[var(--bg-tertiary)]"
+                        }`}
+                        onClick={() =>
+                          setEditForm({ ...editForm, experienceLevel: level })
+                        }
                       >
                         {level}
                       </button>
@@ -723,7 +897,7 @@ const openEditProfile = () => {
                     Cancel
                   </button>
                   <button
-                  onClick={openEditProfile}
+                    onClick={openEditProfile}
                     type="submit"
                     className="flex-1 p-3 bg-[var(--badge-partner-text)] text-white rounded-lg font-semibold hover:bg-[var(--accent-hover)] transition-colors"
                   >
@@ -747,17 +921,29 @@ const openEditProfile = () => {
               &times;
             </button>
             <h2 className="text-[20px] font-semibold mb-5">
-              Edit {currentSection === 'skills' ? 'Skills' : currentSection === 'bio' ? 'About Me' : currentSection === 'preferences' ? 'Project Preferences' : 'Details'}
+              Edit{" "}
+              {currentSection === "skills"
+                ? "Skills"
+                : currentSection === "bio"
+                ? "About Me"
+                : currentSection === "preferences"
+                ? "Project Preferences"
+                : "Details"}
             </h2>
-            
+
             <div className="space-y-6">
-              {currentSection === 'skills' && (
+              {currentSection === "skills" && (
                 <div>
                   <div className="mb-4">
-                    <label className="block text-[14px] font-semibold mb-2">Skills I Have</label>
+                    <label className="block text-[14px] font-semibold mb-2">
+                      Skills I Have
+                    </label>
                     <div className="flex flex-wrap gap-2 p-3 min-h-[60px] border border-[var(--border-color)] rounded-lg bg-[var(--bg-tertiary)]">
                       {profile.skillsHave.map((skill, index) => (
-                        <div key={index} className="bg-[var(--badge-partner-text)] text-white px-3 py-1.5 rounded-full text-[12px] font-medium flex items-center gap-2">
+                        <div
+                          key={index}
+                          className="bg-[var(--badge-partner-text)] text-white px-3 py-1.5 rounded-full text-[12px] font-medium flex items-center gap-2"
+                        >
                           {skill}
                           <button
                             type="button"
@@ -775,7 +961,7 @@ const openEditProfile = () => {
                         value={skillsHaveInput}
                         onChange={(e) => setSkillsHaveInput(e.target.value)}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
+                          if (e.key === "Enter") {
                             e.preventDefault();
                             addSkillHave();
                           }
@@ -784,10 +970,15 @@ const openEditProfile = () => {
                     </div>
                   </div>
                   <div className="mb-4">
-                    <label className="block text-[14px] font-semibold mb-2">Skills I Need</label>
+                    <label className="block text-[14px] font-semibold mb-2">
+                      Skills I Need
+                    </label>
                     <div className="flex flex-wrap gap-2 p-3 min-h-[60px] border border-[var(--border-color)] rounded-lg bg-[var(--bg-tertiary)]">
                       {profile.skillsNeed.map((skill, index) => (
-                        <div key={index} className="bg-[#cc3300] text-white px-3 py-1.5 rounded-full text-[12px] font-medium flex items-center gap-2">
+                        <div
+                          key={index}
+                          className="bg-[#cc3300] text-white px-3 py-1.5 rounded-full text-[12px] font-medium flex items-center gap-2"
+                        >
                           {skill}
                           <button
                             type="button"
@@ -805,7 +996,7 @@ const openEditProfile = () => {
                         value={skillsNeedInput}
                         onChange={(e) => setSkillsNeedInput(e.target.value)}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
+                          if (e.key === "Enter") {
                             e.preventDefault();
                             addSkillNeed();
                           }
@@ -816,9 +1007,11 @@ const openEditProfile = () => {
                 </div>
               )}
 
-              {currentSection === 'bio' && (
+              {currentSection === "bio" && (
                 <div>
-                  <label className="block text-[14px] font-semibold mb-2">About Me</label>
+                  <label className="block text-[14px] font-semibold mb-2">
+                    About Me
+                  </label>
                   <textarea
                     className="w-full p-3 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg min-h-[100px]"
                     value={editBio}
@@ -827,18 +1020,21 @@ const openEditProfile = () => {
                 </div>
               )}
 
-              {currentSection === 'preferences' && (
+              {currentSection === "preferences" && (
                 <div>
                   <div className="mb-6">
                     <div className="flex items-center gap-2 text-[14px] font-semibold mb-3">
                       <svg className="w-4 h-4" viewBox="0 0 24 24">
-                        <path d="M20 6h-4V4c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM10 4h4v2h-4V4zm10 16H4V8h16v12z"/>
+                        <path d="M20 6h-4V4c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM10 4h4v2h-4V4zm10 16H4V8h16v12z" />
                       </svg>
                       Project Types
                     </div>
                     <div className="flex flex-wrap gap-2 p-3 min-h-[60px] border border-[var(--border-color)] rounded-lg bg-[var(--bg-tertiary)]">
                       {editProjectTypes.map((type, index) => (
-                        <div key={index} className="bg-[#4CAF50] text-white px-3 py-1.5 rounded-full text-[12px] font-medium flex items-center gap-2">
+                        <div
+                          key={index}
+                          className="bg-[#4CAF50] text-white px-3 py-1.5 rounded-full text-[12px] font-medium flex items-center gap-2"
+                        >
                           {getProjectTypeLabel(type)}
                           <button
                             type="button"
@@ -855,9 +1051,11 @@ const openEditProfile = () => {
                           className="flex-1 min-w-[100px] bg-transparent outline-none"
                           placeholder="Type a project type"
                           value={editProjectTypeInput}
-                          onChange={(e) => setEditProjectTypeInput(e.target.value)}
+                          onChange={(e) =>
+                            setEditProjectTypeInput(e.target.value)
+                          }
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
+                            if (e.key === "Enter") {
                               e.preventDefault();
                               addProjectType();
                             }
@@ -879,33 +1077,54 @@ const openEditProfile = () => {
                 </div>
               )}
 
-              {currentSection === 'details' && (
+              {currentSection === "details" && (
                 <div>
                   <div className="grid grid-cols-2 gap-4 mb-6">
                     <div>
-                      <label className="block text-[12px] font-semibold mb-1">Location</label>
+                      <label className="block text-[12px] font-semibold mb-1">
+                        Location
+                      </label>
                       <input
                         type="text"
                         className="w-full p-2 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg"
                         value={editDetails.location}
-                        onChange={(e) => setEditDetails({...editDetails, location: e.target.value})}
+                        onChange={(e) =>
+                          setEditDetails({
+                            ...editDetails,
+                            location: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div>
-                      <label className="block text-[12px] font-semibold mb-1">Experience</label>
+                      <label className="block text-[12px] font-semibold mb-1">
+                        Experience
+                      </label>
                       <input
                         type="text"
                         className="w-full p-2 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg"
                         value={editDetails.experience}
-                        onChange={(e) => setEditDetails({...editDetails, experience: e.target.value})}
+                        onChange={(e) =>
+                          setEditDetails({
+                            ...editDetails,
+                            experience: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div>
-                      <label className="block text-[12px] font-semibold mb-1">Availability</label>
+                      <label className="block text-[12px] font-semibold mb-1">
+                        Availability
+                      </label>
                       <select
                         className="w-full p-2 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg"
                         value={editDetails.availability}
-                        onChange={(e) => setEditDetails({...editDetails, availability: e.target.value})}
+                        onChange={(e) =>
+                          setEditDetails({
+                            ...editDetails,
+                            availability: e.target.value,
+                          })
+                        }
                       >
                         <option value="5-10">5-10 hours/week</option>
                         <option value="10-20">10-20 hours/week</option>
@@ -913,59 +1132,101 @@ const openEditProfile = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[12px] font-semibold mb-1">Preferred Role</label>
+                      <label className="block text-[12px] font-semibold mb-1">
+                        Preferred Role
+                      </label>
                       <input
                         type="text"
                         className="w-full p-2 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg"
                         value={editDetails.preferredRole}
-                        onChange={(e) => setEditDetails({...editDetails, preferredRole: e.target.value})}
+                        onChange={(e) =>
+                          setEditDetails({
+                            ...editDetails,
+                            preferredRole: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div>
-                      <label className="block text-[12px] font-semibold mb-1">Education</label>
+                      <label className="block text-[12px] font-semibold mb-1">
+                        Education
+                      </label>
                       <input
                         type="text"
                         className="w-full p-2 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg"
                         value={editDetails.education}
-                        onChange={(e) => setEditDetails({...editDetails, education: e.target.value})}
+                        onChange={(e) =>
+                          setEditDetails({
+                            ...editDetails,
+                            education: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div>
-                      <label className="block text-[12px] font-semibold mb-1">Joined</label>
+                      <label className="block text-[12px] font-semibold mb-1">
+                        Joined
+                      </label>
                       <input
                         type="text"
                         className="w-full p-2 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg"
                         value={editDetails.joinDate}
-                        onChange={(e) => setEditDetails({...editDetails, joinDate: e.target.value})}
+                        onChange={(e) =>
+                          setEditDetails({
+                            ...editDetails,
+                            joinDate: e.target.value,
+                          })
+                        }
                       />
                     </div>
                   </div>
                   <div className="space-y-3 pt-4 border-t border-[var(--border-color)]">
                     <div>
-                      <label className="block text-[12px] font-semibold mb-1">Email</label>
+                      <label className="block text-[12px] font-semibold mb-1">
+                        Email
+                      </label>
                       <input
                         type="email"
                         className="w-full p-2 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg"
                         value={editDetails.email}
-                        onChange={(e) => setEditDetails({...editDetails, email: e.target.value})}
+                        onChange={(e) =>
+                          setEditDetails({
+                            ...editDetails,
+                            email: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div>
-                      <label className="block text-[12px] font-semibold mb-1">GitHub URL</label>
+                      <label className="block text-[12px] font-semibold mb-1">
+                        GitHub URL
+                      </label>
                       <input
                         type="text"
                         className="w-full p-2 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg"
                         value={editDetails.github}
-                        onChange={(e) => setEditDetails({...editDetails, github: e.target.value})}
+                        onChange={(e) =>
+                          setEditDetails({
+                            ...editDetails,
+                            github: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div>
-                      <label className="block text-[12px] font-semibold mb-1">LinkedIn URL</label>
+                      <label className="block text-[12px] font-semibold mb-1">
+                        LinkedIn URL
+                      </label>
                       <input
                         type="text"
                         className="w-full p-2 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg"
                         value={editDetails.linkedin}
-                        onChange={(e) => setEditDetails({...editDetails, linkedin: e.target.value})}
+                        onChange={(e) =>
+                          setEditDetails({
+                            ...editDetails,
+                            linkedin: e.target.value,
+                          })
+                        }
                       />
                     </div>
                   </div>
