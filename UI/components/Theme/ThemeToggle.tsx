@@ -14,7 +14,7 @@ export function ThemeToggle() {
   const isDark = resolvedTheme === "dark";
 
   return (
-    <button
+    <button className="cursor-pointer"
       onClick={() => setTheme(isDark ? "light" : "dark")}
       // className="p-2 rounded-md border"
       aria-label="Toggle theme"

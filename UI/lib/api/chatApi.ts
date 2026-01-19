@@ -1,8 +1,6 @@
 import API from "./api";
 
-/* =======================
-   Types / Interfaces
-======================= */
+ 
 
 export type ConversationType = "Private" | "Group";
 
@@ -17,7 +15,7 @@ export interface Conversation {
   groupName: string | null;
   created_Timestamp: string;
   participants: Participant[];
-  messages: Message[]; // list API ch empty aunda
+  messages: Message[];  
 }
 
 export interface Message {
@@ -25,26 +23,22 @@ export interface Message {
   senderId: string;
   content: string;
   createdAt: string;
-  messageType: string; // Text / Image etc (as backend defines)
+  messageType: string;  
 }
 
-/* =======================
-   APIs
-======================= */
+ 
 
-/**
- * 1️⃣ Get all conversations of logged-in user
- * GET /api/chat/conversations
- */
+ 
+  // Get all conversations of logged-in user
+  
+ 
 export const getConversations = async (): Promise<Conversation[]> => {
   const res = await API.get("/chat/conversations");
   return res.data;
 };
 
-/**
- * 2️⃣ Get messages of a conversation
- * GET /api/chat/{conversationId}/messages
- */
+  // 2️⃣ Get messages of a conversation
+ 
 export const getMessages = async (
   conversationId: string
 ): Promise<Message[]> => {
@@ -52,12 +46,10 @@ export const getMessages = async (
   return res.data;
 };
 
-/**
- * 3️⃣ Create/Get private conversation
- * POST /api/chat/private/{receiverId}
- * ❗ No request body
- * ✅ Response gives conversationId
- */
+// 3️⃣ Create/Get private conversation
+  
+  // Response gives conversationId
+ 
 export const createPrivateConversation = async (
   receiverId: string
 ): Promise<{ conversationId: string }> => {
@@ -65,10 +57,8 @@ export const createPrivateConversation = async (
   return res.data;
 };
 
-/**
- * 4️⃣ Update conversation (PATCH)
- * PATCH /api/chat/conversations/{conversationId}
- */
+  // 4️⃣ Update conversation (PATCH)
+ 
 export interface UpdateConversationPayload {
   groupName?: string;
   conversationType?: ConversationType;

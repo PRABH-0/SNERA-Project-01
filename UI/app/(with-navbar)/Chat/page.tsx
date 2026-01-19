@@ -17,18 +17,15 @@ export default function ChatPage() {
   const [messageText, setMessageText] = useState("");
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
-
   const connectionRef = useRef<any>(null);
   const currentUserId =
     typeof window !== "undefined"
       ? JSON.parse(localStorage.getItem("user")!).userId
       : null;
 
-      useEffect(() => {
-  bottomRef.current?.scrollIntoView({ behavior: "auto" });
-}, [messages]);
- 
-
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "auto" });
+  }, [messages]);
 
   // load sidebar
   useEffect(() => {
@@ -103,20 +100,18 @@ export default function ChatPage() {
                 key={c.id}
                 onClick={() => openChat(c)}
                 className={`flex items-center gap-3 px-5 py-3 cursor-pointer
-        ${
-          activeConversation?.id === c.id
-            ? "bg-[var(--bg-tertiary)]"
-            : "hover:bg-[var(--bg-tertiary)]"
-        }
-      `}
+                          ${
+                            activeConversation?.id === c.id
+                              ? "bg-[var(--bg-tertiary)]"
+                              : "hover:bg-[var(--bg-tertiary)]"
+                          }
+                        `}
               >
                 <Avatar text="PC" color="from-blue-500 to-blue-400" />
 
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-sm text-[var(--text-primary)]">
-                    {c.conversationType === "Private"
-                      ? "Private Chat"
-                      : c.groupName}
+                    {c.groupName}
                   </div>
                   <div className="text-xs text-[var(--text-secondary)] truncate">
                     Click to open chat
@@ -133,13 +128,12 @@ export default function ChatPage() {
           <div className="flex justify-between items-center px-5 py-4 border-b border-[var(--border-color)] ">
             <div className="flex items-center gap-3">
               <Avatar text="TS" color="from-blue-500 to-blue-400" />
+
               <div>
                 <div className="font-semibold text-[var(--text-primary)]">
-                  Team Snera
+                   
                 </div>
-                <div className="text-sm text-[var(--text-secondary)]">
-                  5 members, 3 online
-                </div>
+                <div className="text-sm text-[var(--text-secondary)]"></div>
               </div>
             </div>
 
@@ -189,9 +183,7 @@ export default function ChatPage() {
 
             <input
               value={messageText}
-              
               onChange={(e) => setMessageText(e.target.value)}
-              
               className="flex-1
                         border border-[var(--border-color)]
                         rounded-[20px]
@@ -211,8 +203,6 @@ export default function ChatPage() {
 
                 const user = JSON.parse(localStorage.getItem("user")!);
 
-                 
-                
                 // 🔹 SEND VIA SIGNALR (REAL)
                 await connectionRef.current.invoke(
                   "SendMessage",
