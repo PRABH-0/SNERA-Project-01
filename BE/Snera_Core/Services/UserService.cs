@@ -255,7 +255,9 @@ namespace Snera_Core.Services
         {
             var storedToken = await _unitOfWork.RefreshTokens
                 .FirstOrDefaultAsync(t => t.Token == refreshToken && !t.IsRevoked);
-
+            var user = (await _unitOfWork.Users.FindAsync(u => u.Id == storedToken.UserId)).FirstOrDefault();
+            if (user.User_Status != "Offline")
+                user.User_Status = "Offline";
             if (storedToken == null)
                 return "Already logged out";
 

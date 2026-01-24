@@ -8,7 +8,7 @@ export const createSignalRConnection = () => {
 
   return new signalR.HubConnectionBuilder()
     .withUrl(
-      "http://localhost:5000/chatHub",
+      "https://localhost:44300/chatHub",
       {
         accessTokenFactory: () => user.accessToken,
       }
