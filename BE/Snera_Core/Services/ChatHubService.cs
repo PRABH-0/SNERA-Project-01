@@ -17,7 +17,6 @@ namespace Snera_Core.Services
             _unitOfWork = unitOfWork;
         }
 
-        // 🔹 Create or get private chat
         public async Task<Guid> CreatePrivateConversationAsync(Guid user1, Guid user2)
         {
             var existingConversation = (await _unitOfWork.Conversation
@@ -57,40 +56,36 @@ namespace Snera_Core.Services
 
             foreach (var conversation in conversations)
             {
-                // Load participants
-                conversation.Participants = (await _unitOfWork.ConversationParticipant
+                var participants = (await _unitOfWork.ConversationParticipant
                     .FindAsync(p => p.ConversationId == conversation.Id))
                     .ToList();
 
-                // Load messages
-                conversation.Messages = (await _unitOfWork.Message
+                var participantUserIds = participants.Select(p => p.UserId).Distinct().ToList();
+
+                var users = await _unitOfWork.Users
+                    .FindAsync(u => participantUserIds.Contains(u.Id));
+
+                var userLookup = users.ToDictionary(u => u.Id, u => u);
+
+                var messages = (await _unitOfWork.Message
                     .FindAsync(m => m.ConversationId == conversation.Id))
                     .OrderBy(m => m.Sent_Timestamp)
                     .ToList();
 
-                // 🔹 Determine Group Name
                 string groupName;
 
-                if (conversation.Participants.Count == 2)
+                if (participants.Count == 2)
                 {
-                    // Find the other user
-                    var otherUserId = conversation.Participants
-                        .First(p => p.UserId != userId)
-                        .UserId;
-
-                    // Get user details
-                    var otherUser = (await _unitOfWork.Users
-                        .FindAsync(u => u.Id == otherUserId))
-                        .FirstOrDefault();
-
-                    groupName = otherUser != null ? otherUser.FullName : "Unknown User";
+                    var otherUserId = participants.First(p => p.UserId != userId).UserId;
+                    groupName = userLookup.ContainsKey(otherUserId)
+                        ? userLookup[otherUserId].FullName
+                        : "Unknown User";
                 }
                 else
                 {
-                    groupName = "Group Chat";
+                    groupName = conversation.GroupName ?? "Group Chat";
                 }
 
-                // 🔹 Build response object
                 response.Add(new ConversationResponseDto
                 {
                     Id = conversation.Id,
@@ -98,15 +93,19 @@ namespace Snera_Core.Services
                     Created_Timestamp = conversation.Created_Timestamp,
                     GroupName = groupName,
 
-                    Participants = conversation.Participants.Select(p => new ParticipantDto
+                    Participants = participants.Select(p => new ParticipantDto
                     {
                         UserId = p.UserId,
-                        Role = p.Role
+                        Role = p.Role,
+                        isOnline = userLookup.ContainsKey(p.UserId) &&
+                                   userLookup[p.UserId].User_Status == "Online"
                     }).ToList(),
 
-                    Messages = conversation.Messages.Select(m => new MessageDto
+                    Messages = messages.Select(m => new MessageDto
                     {
-                        Sender = m.SenderId == userId ? "You" : m.SenderId.ToString(),
+                        Sender = m.SenderId == userId
+                            ? "You"
+                            : userLookup.GetValueOrDefault(m.SenderId)?.FullName ?? "Unknown User",
                         Text = m.MessageText,
                         SentAt = m.Sent_Timestamp
                     }).ToList()
@@ -116,35 +115,32 @@ namespace Snera_Core.Services
             return response;
         }
 
-
         public async Task<bool> UpdateConversationAsync(Guid conversationId, UpdateConversationDto model)
-    {
-        // Find the conversation
-        var conversation = (await _unitOfWork.Conversation
-            .FindAsync(c => c.Id == conversationId))
-            .FirstOrDefault();
-
-        if (conversation == null)
-            return false;
-
-        // Patch only provided fields
-        if (!string.IsNullOrWhiteSpace(model.GroupName))
-            conversation.GroupName = model.GroupName;
-
-        if (!string.IsNullOrWhiteSpace(model.ConversationType))
-            conversation.ConversationType = model.ConversationType;
-
-        _unitOfWork.Conversation.Update(conversation);
-        await _unitOfWork.SaveAllAsync();
-
-        return true;
-    }
-
-    // 🔹 Get chat history
-    public async Task<IEnumerable<Message>> GetMessagesAsync(Guid conversationId)
         {
-            return await _unitOfWork.Message
-                .FindAsync(m => m.ConversationId == conversationId);
+            var conversation = (await _unitOfWork.Conversation
+                .FindAsync(c => c.Id == conversationId))
+                .FirstOrDefault();
+
+            if (conversation == null)
+                return false;
+
+            if (!string.IsNullOrWhiteSpace(model.GroupName))
+                conversation.GroupName = model.GroupName;
+
+            if (!string.IsNullOrWhiteSpace(model.ConversationType))
+                conversation.ConversationType = model.ConversationType;
+
+            _unitOfWork.Conversation.Update(conversation);
+            await _unitOfWork.SaveAllAsync();
+
+            return true;
+        }
+
+        public async Task<IEnumerable<Message>> GetMessagesAsync(Guid conversationId)
+        {
+            return (await _unitOfWork.Message
+                .FindAsync(m => m.ConversationId == conversationId))
+                .OrderBy(m => m.Sent_Timestamp);
         }
     }
 }

@@ -6,7 +6,7 @@ namespace Snera_Core.Entities.ChatEntities
     {
         public Guid Id { get; set; }
 
-        public Guid ConversationId { get; set; }
+        public Guid? ConversationId { get; set; }
         public Guid UserId { get; set; }
 
         // Optional: Admin, Member

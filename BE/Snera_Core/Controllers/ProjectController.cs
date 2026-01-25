@@ -63,6 +63,20 @@ namespace Snera_Core.Controllers
                 return BadRequest(new { error = ex.Message });
             }
         }
+        [HttpPost("GetAllProjectByUserId")]
+        [Authorize]
+        public async Task<IActionResult> GetAllProjectByUserId(Guid userId)
+        {
+            try
+            {
+                var response = await _projectService.GetUserProjects(userId);
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
 
         [HttpPost("LikeProjectPost")]
         [Authorize]

@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Snera_Core.Common;
+using Snera_Core.Entities.ChatEntities;
 using Snera_Core.Entities.ProjectEntities;
 using Snera_Core.Interface;
 using Snera_Core.Models.HelperModels;
@@ -169,9 +170,28 @@ namespace Snera_Core.Services
         {
             Guid userId = dto.User_Id.Value;
 
+            var conversation = new Conversation
+            {
+                Id = Guid.NewGuid(),
+                ConversationType = "Group",
+                GroupName = dto.Project_Title,
+                Created_Timestamp = DateTime.UtcNow,
+                Participants = new List<ConversationParticipant>
+        {
+            new ConversationParticipant
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                Role = "Admin"
+            }
+        }
+            };
+
             var project = new UserProject
             {
                 Id = Guid.NewGuid(),
+                User_Id = userId,
+                Conversation_Id = conversation.Id,
                 Created_Timestamp = DateTime.UtcNow,
                 Record_State = "Active",
                 User_Status = "Offline"
@@ -208,12 +228,12 @@ namespace Snera_Core.Services
                 Record_State = "Active"
             };
 
-            // Prepare skills in batch
-            var skillEntities = new List<ProjectSkill>();
+            // ✅ FIX: prepare project skills
+            var projectSkills = new List<ProjectSkill>();
 
             if (dto.SkillsHave != null)
             {
-                skillEntities.AddRange(dto.SkillsHave
+                projectSkills.AddRange(dto.SkillsHave
                     .Where(s => !string.IsNullOrWhiteSpace(s))
                     .Select(skill => new ProjectSkill
                     {
@@ -226,7 +246,7 @@ namespace Snera_Core.Services
 
             if (dto.SkillsNeed != null)
             {
-                skillEntities.AddRange(dto.SkillsNeed
+                projectSkills.AddRange(dto.SkillsNeed
                     .Where(s => !string.IsNullOrWhiteSpace(s))
                     .Select(skill => new ProjectSkill
                     {
@@ -237,43 +257,30 @@ namespace Snera_Core.Services
                     }));
             }
 
-            // Prepare links in batch
-            var linkEntities = new List<ResourseLinks>();
-            if (dto.Link != null)
-            {
-                linkEntities.AddRange(dto.Link.Select(link => new ResourseLinks
-                {
-                    Id = Guid.NewGuid(),
-                    Project_Id = project.Id,
-                    Link = link
-                }));
-            }
-
-            // Execute all operations in single transaction
             await _unitOfWork.BeginTransactionAsync();
             try
             {
+                await _unitOfWork.Conversation.AddAsync(conversation);
                 await _unitOfWork.UserProject.AddAsync(project);
                 await _unitOfWork.ProjectDescription.AddAsync(description);
                 await _unitOfWork.ProjectTeamMembers.AddAsync(adminMember);
 
-                if (skillEntities.Any())
-                    await _unitOfWork.ProjectSkill.AddRangeAsync(skillEntities);
-
-                if (linkEntities.Any())
-                    await _unitOfWork.ResourseLinks.AddRangeAsync(linkEntities);
+                // ✅ FIX: save skills
+                if (projectSkills.Any())
+                    await _unitOfWork.ProjectSkill.AddRangeAsync(projectSkills);
 
                 await _unitOfWork.SaveAllAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
                 return "Project created successfully.";
             }
-            catch (Exception ex)
+            catch
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                return $"Error creating project: {ex.Message}";
+                throw;
             }
         }
+
 
         public async Task<GetProjectListResponse> GetAllPosts(FilterModel request)
         {
@@ -591,15 +598,100 @@ namespace Snera_Core.Services
 
             return trendingList;
         }
+        public async Task<GetProjectListResponse> GetUserProjects(Guid userId)
+        {
+            var projects = await _unitOfWork.UserProject
+                .GetQueryable()
+                .Include(p => p.ProjectDescription)
+                .Where(p =>
+                    p.Record_State == "Active" &&
+                    p.User_Id == userId)
+                .OrderByDescending(p => p.Created_Timestamp)
+                .ToListAsync();
+
+            if (!projects.Any())
+            {
+                return new GetProjectListResponse
+                {
+                    TotalCount = 0,
+                    TotalPages = 0,
+                    PageNumber = 1,
+                    PageSize = 0,
+                    Projects = new List<ProjectListItemDto>()
+                };
+            }
+
+            var projectIds = projects.Select(p => p.Id).ToList();
+
+            var skills = await _unitOfWork.ProjectSkill
+                .FindAsync(s => projectIds.Contains(s.Project_Id));
+
+            var likes = await _unitOfWork.ProjectLike
+                .FindAsync(l => projectIds.Contains(l.Project_Id));
+
+            var comments = await _unitOfWork.ProjectComment
+                .FindAsync(c => projectIds.Contains(c.Project_Id));
+
+            var projectList = projects.Select(project =>
+            {
+                var description = project.ProjectDescription
+                    ?.OrderByDescending(d => d.Created_At)
+                    .FirstOrDefault();
+
+                return new ProjectListItemDto
+                {
+                    Project_Id = project.Id,
+
+                    ProjectTitle = description?.Project_Title,
+                    ProjectType = description?.Project_Type,
+                    Description = description?.Description,
+                    Budget = description?.Budget,
+                    Timeline = description?.Project_Timeline,
+
+                    TeamSize = description.Team_Size,
+                    ExperienceLevel = description?.Experience_Level,
+
+                    Project_Status = description?.Project_Status,
+                    Project_Visibility = description?.Project_Visibility,
+
+                    CreatedAt = description?.Created_At ?? project.Created_Timestamp,
+
+                    Team_Name = description?.Team_Name,
+                    Start_Date = description?.Start_Date,
+                    End_Date = description?.End_Date,
+
+                    SkillsHave = skills
+                        .Where(s => s.Project_Id == project.Id && s.Skill_Type == "Have")
+                        .Select(s => s.Skill_Name)
+                        .ToList(),
+
+                    SkillsNeed = skills
+                        .Where(s => s.Project_Id == project.Id && s.Skill_Type == "Need")
+                        .Select(s => s.Skill_Name)
+                        .ToList(),
+
+                    LikeCount = likes.Count(l => l.Project_Id == project.Id),
+                    CommentCount = comments.Count(c => c.Project_Id == project.Id)
+                };
+            }).ToList();
+
+            return new GetProjectListResponse
+            {
+                TotalCount = projectList.Count,
+                TotalPages = 1,
+                PageNumber = 1,
+                PageSize = projectList.Count,
+                Projects = projectList
+            };
+        }
 
         public async Task<List<object>> GetDeveloperRequestsByProjectId(Guid projectId)
         {
-            // Fixed: Use correct property name
             var requests = await _unitOfWork.ProjectDeveloperRequest
                 .GetQueryable()
                 .Include(r => r.User)
-                .Include(r => r.ProjectDeveloperRequestSkill)  // Fixed: Correct property name
-                .Where(r => r.Project_Id == projectId && r.Record_State == "Active")
+                .Include(r => r.ProjectDeveloperRequestSkill)
+                .Where(r => r.Project_Id == projectId && r.Record_State == "Pending")
                 .ToListAsync();
 
             if (!requests.Any())
@@ -616,7 +708,9 @@ namespace Snera_Core.Services
                 r.Project_Experience_Text,
                 r.Active_Hour,
                 r.Created_At,
-                Skills = r.ProjectDeveloperRequestSkill.Select(s => s.Skill_Name).ToList()  // Fixed: Correct property name
+                Skills = r.ProjectDeveloperRequestSkill
+                    .Select(s => s.Skill_Name)
+                    .ToList()
             }).ToList<object>();
         }
 
@@ -637,6 +731,12 @@ namespace Snera_Core.Services
             if (admin == null)
                 return "Only admin can accept or reject requests";
 
+            var project = await _unitOfWork.UserProject
+                .FirstOrDefaultAsync(p => p.Id == request.Project_Id);
+
+            if (project == null)
+                return "Project not found";
+
             await _unitOfWork.BeginTransactionAsync();
             try
             {
@@ -652,6 +752,24 @@ namespace Snera_Core.Services
                         Created_At = DateTime.UtcNow,
                         Record_State = "Active"
                     });
+
+                    var alreadyInChat = await _unitOfWork.ConversationParticipant
+                        .FirstOrDefaultAsync(cp =>
+                            cp.ConversationId == project.Conversation_Id &&
+                            cp.UserId == request.User_Id);
+
+                    if (alreadyInChat == null)
+                    {
+                        await _unitOfWork.ConversationParticipant.AddAsync(
+                            new ConversationParticipant
+                            {
+                                Id = Guid.NewGuid(),
+                                ConversationId = project.Conversation_Id,
+                                UserId = request.User_Id,
+                                Role = "Member"
+                            });
+                    }
+
                     request.Record_State = "Accepted";
                 }
                 else
@@ -664,7 +782,9 @@ namespace Snera_Core.Services
                 await _unitOfWork.SaveAllAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
-                return isAccepted ? "Developer request accepted" : "Developer request rejected";
+                return isAccepted
+                    ? "Developer request accepted and added to group chat"
+                    : "Developer request rejected";
             }
             catch (Exception ex)
             {

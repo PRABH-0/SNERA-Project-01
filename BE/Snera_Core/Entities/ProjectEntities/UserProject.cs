@@ -5,7 +5,9 @@ namespace Snera_Core.Entities.ProjectEntities
     public class UserProject
     {
         public Guid Id { get; set; }
-        
+        public Guid User_Id { get; set; }
+        public Guid? Conversation_Id { get; set; }
+
         public DateTime Created_Timestamp { get; set; } = DateTime.UtcNow;
         public string Record_State { get; set; } = "Active";
         public string User_Status { get; set; } = "Offline";
