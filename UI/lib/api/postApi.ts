@@ -107,13 +107,9 @@ const postApi = {
   return API.get(`/Users/profile/${userId}`);
 },
 
-updateUserProfile: (payload: UpdateProfilePayload) => {
-  const { userId, ...data } = payload;
-
-  return API.patch(
-    `/Users/profile/${userId}`,
-    data
-  );
+  // postApi.ts
+updateUserProfile: (userId: string, payload: any) => {
+  return API.patch(`/Users/profile/${userId}`, payload);
 },
 
 

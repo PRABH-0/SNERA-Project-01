@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import FullScreenLoader from "@/components/Loader/FullScreenLoader";
 import postApi from "@/lib/api/postApi";
+import { getAvatarName } from "@/utils/getAvatarName";
 
 type UserType = "student" | "professional" | "business-owner";
 type ExperienceLevel = "0-1 years" | "1-3 years" | "3-5 years" | "5+ years";
@@ -151,6 +152,9 @@ const ProfilePage: React.FC = () => {
 
   const [skillsHaveInput, setSkillsHaveInput] = useState("");
   const [skillsNeedInput, setSkillsNeedInput] = useState("");
+  const [editSkillsHave, setEditSkillsHave] = useState<string[]>([]);
+const [editSkillsNeed, setEditSkillsNeed] = useState<string[]>([]);
+
   const [editBio, setEditBio] = useState("");
   const [editProjectTypes, setEditProjectTypes] = useState<string[]>([]);
   const [editProjectTypeInput, setEditProjectTypeInput] = useState(""); // NEW: for project type input
@@ -195,8 +199,10 @@ const ProfilePage: React.FC = () => {
     // Initialize form data based on section
     switch (section) {
       case "skills":
-        // Skills are already in state
-        break;
+  setEditSkillsHave([...profile.skillsHave]);
+  setEditSkillsNeed([...profile.skillsNeed]);
+  break;
+
       case "bio":
         setEditBio(profile.bio);
         break;
@@ -228,14 +234,13 @@ const ProfilePage: React.FC = () => {
 
       setLoading(true);
 
-      await postApi.updateUserProfile({
-        userId: user.userId,
-        name: editForm.name,
-        title: editForm.title,
-        profileType: editForm.userType,
-        experienceLevel: editForm.experienceLevel,
-      });
-
+     const payload = {
+      name: editForm.name,
+      title: editForm.title,
+      profileType: editForm.userType as UserType,
+      experienceLevel: editForm.experienceLevel as ExperienceLevel,
+    };
+ await postApi.updateUserProfile(user.userId, payload);
       const res = await postApi.getUserProfile(user.userId);
       setProfile(mapApiProfileToUI(res.data));
 
@@ -279,48 +284,51 @@ const ProfilePage: React.FC = () => {
     projects: data.projects ?? [],
   });
 
-  const handleSaveSection = async () => {
-    try {
-      if (!user?.userId) return;
+ const handleSaveSection = async () => {
+  try {
+    if (!user?.userId) return;
+    setLoading(true);
 
-      setLoading(true);
+    const payload: any = {};
 
-      const payload: any = { userId: user.userId };
-
-      if (currentSection === "skills") {
-        payload.skillsHave = profile.skillsHave;
-        payload.skillsNeed = profile.skillsNeed;
-      }
-
-      if (currentSection === "bio") {
-        payload.bio = editBio;
-      }
-
-      if (currentSection === "preferences") {
-        payload.projectTypes = editProjectTypes;
-      }
-
-      if (currentSection === "details") {
-        payload.location = editDetails.location;
-        payload.availability = editDetails.availability;
-        payload.preferredRole = editDetails.preferredRole;
-        payload.education = editDetails.education;
-      }
-
-      if (Object.keys(payload).length === 1) return;
-
-      await postApi.updateUserProfile(payload);
-
-      const res = await postApi.getUserProfile(user.userId);
-      setProfile(mapApiProfileToUI(res.data));
-
-      setShowEditSectionModal(false);
-    } catch (err) {
-      console.error("Section update failed", err);
-    } finally {
-      setLoading(false);
+    if (currentSection === "skills") {
+      payload.skillsHave = editSkillsHave;
+      payload.skillsNeed = editSkillsNeed;
     }
-  };
+
+    if (currentSection === "bio") {
+      payload.bio = editBio;
+    }
+
+    if (currentSection === "preferences") {
+      payload.projectTypes = editProjectTypes;
+    }
+
+    if (currentSection === "details") {
+      payload.location = editDetails.location;
+      payload.availability = editDetails.availability;
+      payload.preferredRole = editDetails.preferredRole;
+      payload.education = editDetails.education;
+      payload.email = editDetails.email;
+      payload.gitHub = editDetails.github;
+      payload.linkedIn = editDetails.linkedin;
+    }
+
+    if (Object.keys(payload).length === 0) return;
+
+    await postApi.updateUserProfile(user.userId, payload);
+
+    const res = await postApi.getUserProfile(user.userId);
+    setProfile(mapApiProfileToUI(res.data));
+
+    setShowEditSectionModal(false);
+  } catch (err) {
+    console.error("Section update failed", err);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   // Add project type function
   const addProjectType = () => {
@@ -338,45 +346,37 @@ const ProfilePage: React.FC = () => {
     setEditProjectTypes((prev) => prev.filter((t) => t !== type));
   };
 
-  const addSkillHave = () => {
-    if (
-      skillsHaveInput.trim() &&
-      !profile.skillsHave.includes(skillsHaveInput.trim())
-    ) {
-      setProfile((prev) => ({
-        ...prev,
-        skillsHave: [...prev.skillsHave, skillsHaveInput.trim()],
-      }));
-      setSkillsHaveInput("");
-    }
-  };
+ const addSkillHave = () => {
+  if (
+    skillsHaveInput.trim() &&
+    !editSkillsHave.includes(skillsHaveInput.trim())
+  ) {
+    setEditSkillsHave(prev => [...prev, skillsHaveInput.trim()]);
+    setSkillsHaveInput("");
+  }
+};
+
 
   const addSkillNeed = () => {
-    if (
-      skillsNeedInput.trim() &&
-      !profile.skillsNeed.includes(skillsNeedInput.trim())
-    ) {
-      setProfile((prev) => ({
-        ...prev,
-        skillsNeed: [...prev.skillsNeed, skillsNeedInput.trim()],
-      }));
-      setSkillsNeedInput("");
-    }
-  };
+  if (
+    skillsNeedInput.trim() &&
+    !editSkillsNeed.includes(skillsNeedInput.trim())
+  ) {
+    setEditSkillsNeed(prev => [...prev, skillsNeedInput.trim()]);
+    setSkillsNeedInput("");
+  }
+};
 
-  const removeSkillHave = (skill: string) => {
-    setProfile((prev) => ({
-      ...prev,
-      skillsHave: prev.skillsHave.filter((s) => s !== skill),
-    }));
-  };
+  
 
-  const removeSkillNeed = (skill: string) => {
-    setProfile((prev) => ({
-      ...prev,
-      skillsNeed: prev.skillsNeed.filter((s) => s !== skill),
-    }));
-  };
+ const removeSkillHave = (skill: string) => {
+  setEditSkillsHave(prev => prev.filter(s => s !== skill));
+};
+
+ const removeSkillNeed = (skill: string) => {
+  setEditSkillsNeed(prev => prev.filter(s => s !== skill));
+};
+
 
   // Get label for project type (if it's a known type, use the label, otherwise use the value)
   const getProjectTypeLabel = (type: string) => {
@@ -420,7 +420,7 @@ const ProfilePage: React.FC = () => {
             <div className="absolute top-0 left-0 right-0 h-[120px] bg-[var(--navbar-bg)]"></div>
             <div className="relative z-10 flex items-end gap-6">
               <div className="w-[120px] h-[120px] rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center text-[36px] font-semibold text-[var(--text-secondary)] border-4 border-[var(--card-bg)] shadow-lg">
-                JS
+                {getAvatarName(profile.name)}
               </div>
               <div className="flex-1 pb-2">
                 <h1 className="text-[28px] font-bold mb-2">{profile.name}</h1>
@@ -897,7 +897,7 @@ const ProfilePage: React.FC = () => {
                     Cancel
                   </button>
                   <button
-                    onClick={openEditProfile}
+                     
                     type="submit"
                     className="flex-1 p-3 bg-[var(--badge-partner-text)] text-white rounded-lg font-semibold hover:bg-[var(--accent-hover)] transition-colors"
                   >
@@ -939,7 +939,7 @@ const ProfilePage: React.FC = () => {
                       Skills I Have
                     </label>
                     <div className="flex flex-wrap gap-2 p-3 min-h-[60px] border border-[var(--border-color)] rounded-lg bg-[var(--bg-tertiary)]">
-                      {profile.skillsHave.map((skill, index) => (
+                      {editSkillsHave.map((skill, index) => (
                         <div
                           key={index}
                           className="bg-[var(--badge-partner-text)] text-white px-3 py-1.5 rounded-full text-[12px] font-medium flex items-center gap-2"
@@ -974,7 +974,7 @@ const ProfilePage: React.FC = () => {
                       Skills I Need
                     </label>
                     <div className="flex flex-wrap gap-2 p-3 min-h-[60px] border border-[var(--border-color)] rounded-lg bg-[var(--bg-tertiary)]">
-                      {profile.skillsNeed.map((skill, index) => (
+                      {editSkillsNeed.map((skill, index) => (
                         <div
                           key={index}
                           className="bg-[#cc3300] text-white px-3 py-1.5 rounded-full text-[12px] font-medium flex items-center gap-2"
@@ -1126,9 +1126,9 @@ const ProfilePage: React.FC = () => {
                           })
                         }
                       >
-                        <option value="5-10">5-10 hours/week</option>
-                        <option value="10-20">10-20 hours/week</option>
-                        <option value="20+">20+ hours/week</option>
+                        <option value="5-10 hours/week">5-10 hours/week</option>
+                        <option value="10-20 hours/week">10-20 hours/week</option>
+                        <option value="20+ hours/week">20+ hours/week</option>
                       </select>
                     </div>
                     <div>

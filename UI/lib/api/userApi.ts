@@ -43,6 +43,8 @@ const userApi = {
   getAll: () => {
     return API.get("/Users/getall");
   },
+
+
 };
 
 export default userApi;
