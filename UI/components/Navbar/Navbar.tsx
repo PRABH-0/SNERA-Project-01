@@ -6,18 +6,17 @@ import { useRouter, usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import Searchbar from "../Searchbar/Searchbar";
 import HamBurger from "../Hamburger/Hamburger";
-import {ThemeToggle} from "../Theme/ThemeToggle";
+import { ThemeToggle } from "../Theme/ThemeToggle";
 import logodark from "@/public/assets/snera-dark-remove-bg.png";
-import logolight from "@/public/assets/Snera-canva-2__1_-crop-removebg-light.png"; 
-import { getAvatarName } from "@/utils/getAvatarName"; 
-import { useUser } from "@/hooks/useUser"; 
-
+import logolight from "@/public/assets/Snera-canva-2__1_-crop-removebg-light.png";
+import { getAvatarName } from "@/utils/getAvatarName";
+import { useUser } from "@/hooks/useUser";
 
 const Navbar = () => {
-  const router = useRouter(); 
+  const router = useRouter();
   const { user, setUser, loadingUser } = useUser();
   const { theme } = useTheme();
-   const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -25,15 +24,14 @@ const Navbar = () => {
 
   if (!mounted) return null; // 👈 important
 
-
   return (
     <div>
       <div className="fixed top-0 left-0 w-full bg-[var(--bg-secondary)] border-b border-[var(--border-color)]  flex items-center justify-between  z-50 h-16 px-2">
         <HamBurger />
         <div className=" text-[#f2ffff] mx-6 text-lg font-medium md:absolute left-0   ">
           <Image
-          width={681}
-          height={192}
+            width={681}
+            height={192}
             className="min-w-27 max-w-27"
             src={theme === "dark" ? logolight : logodark}
             alt="SNERA"
@@ -72,7 +70,7 @@ const Navbar = () => {
                 {/* Hover Box */}
 
                 <div
-                  className="absolute right-2 top-12 border-[.5px] border-[var(--border-color)] w-65 bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded    opacity-0 invisible 
+                  className="absolute right-2 top-12 border-[.5px] border-[var(--border-color)] w-60 bg-[var(--bg-tertiary)] text-[var(--text-primary)] rounded    opacity-0 invisible 
                                 group-hover:opacity-100 group-hover:visible
                                  transition-all duration-200 z-10"
                 >
@@ -94,7 +92,7 @@ const Navbar = () => {
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-3 m-3   border-b border-[var(--border-color)]">
+                    <div className="flex flex-col gap-3 mx-3  pb-4 border-b border-[var(--border-color)]">
                       <div className="flex justify-between">
                         <div className=" text-[var(--text-secondary)] text-sm">
                           Projects
@@ -122,19 +120,9 @@ const Navbar = () => {
                     </div>
 
                     <div className="flex flex-col  ">
-                      <div className="flex gap-3 items-center h-10 hover:bg-[var(--bg-secondary)] transition-[.2s] p-3 mt-1.5 text-[var(--text-primary)]">
-                        <svg
-                          className="size-4 fill-[var(--text-secondary)]"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                        </svg>
-                        <p>My Profile</p>
-                      </div>
- 
                       <Link
-                        href="/CreatePost"
-                        className="flex gap-3 items-center h-10 hover:bg-[var(--bg-tertiary)] transition-[.2s] p-3 text-[var(--text-primary)]"
+                        href="/createProject"
+                        className="flex gap-3 items-center h-10 hover:bg-[var(--bg-secondary)] transition-[.2s] p-3 text-[var(--text-primary)]"
                       >
                         <svg
                           className="size-4 fill-[var(--text-secondary)]"
@@ -156,24 +144,28 @@ const Navbar = () => {
                         <p>Settings</p>
                       </div>
 
-<Link href="/Profile">
-  <div className="btn box-shadow-none bg-black hover:bg-[#404040] border-none outline-none text-white p-3 m-3 cursor-pointer">
-    My Profile
-  </div>
-</Link>
+                      <Link href="/Profile">
+                        <div className="btn box-shadow-none underline text-sm bg-black hover:bg-[#404040] border-none outline-none text-white p-3 m-3 cursor-pointer rounded text-center">
+                          My Profile
+                        </div>
+                      </Link>
 
                       <button
-                        className="w-full text-center px-2 py-2 rounded hover:bg-[var(--bg-tertiary)] text-red-500 "
+                        className="  flex flex-row justify-center items-center  px-2 py-2 rounded-md text-[var(--text-primary)] border font-medium m-3 border-[var(--border-color)] bg-transparent transition-[.3s] hover:bg-[var(--error2-color)] hover:border-[var(--error-color)] hover:text-[var(--error-color)]  "
                         onClick={() => {
                           localStorage.removeItem("token");
                           localStorage.removeItem("user");
 
-                          setUser(null);
-                           
                           window.location.href = "/";
                         }}
                       >
-                        Logout
+                        <svg
+                          className="size-4 fill-[var(--text-secondary)] mx-2"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" />
+                        </svg>
+                        Sign Out
                       </button>
                     </div>
                   </div>
