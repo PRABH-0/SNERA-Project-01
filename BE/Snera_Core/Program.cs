@@ -77,6 +77,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             OnMessageReceived = context =>
             {
+                // ⭐ READ FROM COOKIE
+                var tokenFromCookie = context.Request.Cookies["access_token"];
+                if (!string.IsNullOrEmpty(tokenFromCookie))
+                {
+                    context.Token = tokenFromCookie;
+                    return Task.CompletedTask;
+                }
+
+                // 🔁 SignalR fallback
                 var accessToken = context.Request.Query["access_token"];
                 var path = context.HttpContext.Request.Path;
 
@@ -89,6 +98,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 return Task.CompletedTask;
             }
         };
+
     });
 
 builder.Services.AddCors(options =>
@@ -116,8 +126,10 @@ builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<IChatHubService, ChatHubService>();
 builder.Services.AddScoped<ISearchService, SearchService>();
 builder.Services.AddScoped<JwtService>();
-builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+builder.Services.AddHttpContextAccessor();
+
 
 var app = builder.Build();
 
