@@ -130,32 +130,30 @@ const Sign: React.FC<SignProps> = ({
     }
   };
 
-  const handleLoginSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setLoginError("");
+ const handleLoginSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
+  setLoginError("");
 
-    try {
-      const res = await userApi.login(loginData);
+  try {
+    // 🔐 login → backend cookies set karega
+    await userApi.login(loginData);
 
-      const { accessToken } = res.data;
+    // ❌ no Cookies.set
+    // ❌ no localStorage
+    // ❌ no token handling
 
-      if (!accessToken) {
-        throw new Error("Access token missing");
-      }
+    // 👉 optional: user data preload karni aa
+    // await userApi.getMe();
 
-      Cookies.set("access_token", accessToken, {
-        expires: 7,
-        path: "/",
-      });
+    router.replace("/Home");
+  } catch (err) {
+    setLoginError("Invalid email or password!");
+  } finally {
+    setLoading(false);
+  }
+};
 
-      router.push("/Home");
-    } catch (err) {
-      setLoginError("Invalid email or password!");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (!isOpen) return null;
 

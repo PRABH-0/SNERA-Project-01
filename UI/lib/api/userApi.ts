@@ -2,7 +2,6 @@
 
 import API from "./api";
 
- 
 export interface LoginPayload {
   email: string;
   password: string;
@@ -19,32 +18,41 @@ export interface RegisterPayload {
   userSkills: string[];
 }
 
+ 
 export interface LoginResponse {
   userId: string;
   userEmail: string;
-  singerName: string;
-  accessToken: string;
+  userName: string;
   loginResponseString: string;
 }
 
- 
 const userApi = {
-  // 🔐 Register user
+  // 📝 Register
   register: (data: RegisterPayload) => {
     return API.post("/Users/register", data);
   },
 
-  // 🔐 Login user
+  // 🔐 Login
   login: (data: LoginPayload) => {
     return API.post<LoginResponse>("/Users/login", data);
+    // 👉 backend cookies set karega (access + refresh)
+  },
+
+  // 🔓 Logout
+  logout: () => {
+    return API.post("/Users/logout");
+    // 👉 backend cookies delete karega
+  },
+
+  // 👤 Get current user (token decode backend karega)
+  getMe: () => {
+    return API.get("/Users/profile");
   },
 
   // 👥 Get all users
   getAll: () => {
     return API.get("/Users/getall");
   },
-
-
 };
 
 export default userApi;

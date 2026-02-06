@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { ReactNode } from "react";
-import Navbar from "@/components/Navbar/Navbar";
+import { ReactNode } from "react"; 
 
 export const metadata: Metadata = {
   title: "Home",
@@ -14,7 +13,6 @@ type Props = {
 export default function HomeLayout({ children }: Props) {
   return (
     <>
-      
       {children}
     </>
   );

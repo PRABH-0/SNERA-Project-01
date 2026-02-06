@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
-import { ThemeToggle } from "../Theme/ThemeToggle";
-import Sign from "../auth/SignModal";
+import Image from "next/image"; 
+ import { ThemeToggle } from "@/components/Theme/ThemeToggle";
+import Sign from "@/components/auth/SignModal";
 import { useTheme } from "next-themes";
 
 import logodark from "@/public/assets/snera-dark-remove-bg.png";

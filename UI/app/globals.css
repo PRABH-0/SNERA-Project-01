@@ -33,10 +33,11 @@
   --input-bg: #ffffff;
   --button-text: #ffffff;
   --section-border: #e6e6e6;
-  --success-color: #28a745;
+  --success-color: #28a745; 
+  --success-bg: #2e7d321a;
   --warning-color: #ffc107;
   --icon-color: #6c757d;
-  --icon-hover: #212529;
+  --icon-hover: #212529; 
   --button-bg: #2563eb;  
   --post-border: #dee2e6;
   --error-color: #e74c3c;
@@ -74,6 +75,7 @@
   --button-text: #2c2c2c;
   --section-border: #444444;
   --success-color: #4caf50;
+  --success-bg: #2e7d321a;
   --warning-color: #ff9800;
   --icon-color: #e0e0e0;
   --icon-hover: #ffffff;
@@ -88,7 +90,19 @@ body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   transition: background-color 0.3s, color 0.3s;
+  
+}
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
- 
+
+
  

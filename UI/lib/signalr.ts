@@ -1,18 +1,11 @@
 import * as signalR from "@microsoft/signalr";
 
 export const createSignalRConnection = () => {
-  const raw = localStorage.getItem("user");
-  if (!raw) throw new Error("No user");
-
-  const user = JSON.parse(raw);
-
   return new signalR.HubConnectionBuilder()
-    .withUrl(
-      "https://localhost:44300/chatHub",
-      {
-        accessTokenFactory: () => user.accessToken,
-      }
-    )
-    .withAutomaticReconnect()
+    .withUrl("http://localhost:5000/chatHub", {
+      withCredentials: true,
+      transport: signalR.HttpTransportType.WebSockets, // 🔒 force WS
+    })
+    .withAutomaticReconnect([0, 2000, 5000, 10000])
     .build();
 };

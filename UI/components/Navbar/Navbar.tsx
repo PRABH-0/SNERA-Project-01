@@ -1,32 +1,61 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react"; 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import Searchbar from "../Searchbar/Searchbar";
 import HamBurger from "../Hamburger/Hamburger";
 import { ThemeToggle } from "../Theme/ThemeToggle";
 import logodark from "@/public/assets/snera-dark-remove-bg.png";
 import logolight from "@/public/assets/Snera-canva-2__1_-crop-removebg-light.png";
-import { getAvatarName } from "@/utils/getAvatarName";
-import { useUser } from "@/hooks/useUser";
+import { getAvatarName } from "@/utils/getAvatarName"; 
+import userApi from "@/lib/api/userApi";
+
 
 const Navbar = () => {
-  const router = useRouter();
-  const { user, setUser, loadingUser } = useUser();
+  const router = useRouter(); 
+   const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const { theme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted] = useState(false); 
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await userApi.getMe();
+        setUser(res.data);
+        console.log("Fetched user data:", res.data);
+      } catch {
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUser();
+  }, []);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+ const handleLogout = async () => {
+  try {
+         await userApi.logout();
+        } catch (err) {
+          console.error("Logout API error:", err);
+        } finally {          
+          setUser(null);   
+    router.replace("/");
+  }
+};
 
-  if (!mounted) return null; // 👈 important
+
+  if (!mounted) return null;  
 
   return (
     <div>
-      <div className="fixed top-0 left-0 w-full bg-[var(--bg-secondary)] border-b border-[var(--border-color)]  flex items-center justify-between  z-50 h-16 px-2">
+      <div className="fixed top-0 left-0 w-full bg-[var(--bg-secondary)] border-b border-[var(--border-color)]  flex items-center justify-between  z-50 h-14 px-2">
         <HamBurger />
         <div className=" text-[#f2ffff] mx-6 text-lg font-medium md:absolute left-0   ">
           <Image
@@ -62,8 +91,8 @@ const Navbar = () => {
               <div className="relative group w-10">
                 {/* Profile Avatar */}
                 <div className="btn btn-ghost btn-circle avatar cursor-pointer">
-                  <div className="w-9 h-9 rounded-full bg-[var(--accent-color)] text-[var(--text-forth)] flex items-center justify-center font-semibold text-lg cursor-pointer">
-                    {getAvatarName(user?.userName)}
+                  <div className="w-10 h-10 rounded-full bg-[var(--accent-color)] text-[var(--text-forth)] flex items-center justify-center font-semibold text-md cursor-pointer">
+                    {getAvatarName(user?.name)}
                   </div>
                 </div>
 
@@ -74,20 +103,20 @@ const Navbar = () => {
                                 group-hover:opacity-100 group-hover:visible
                                  transition-all duration-200 z-10"
                 >
-                  <div>
+                  { user &&  <div>
                     <div className="flex gap-5 h-16  p-2  m-3 border-b border-[var(--border-color)]">
-                      <div className="w-10 h-10 rounded-full bg-[var(--accent-color)] text-[var(--text-forth)] flex items-center justify-center font-semibold text-lg">
-                        {getAvatarName(user?.userName)}
+                      <div className="w-12 h-12 rounded-full bg-[var(--accent-color)] text-[var(--text-forth)] flex items-center justify-center font-semibold text-lg">
+                        {getAvatarName(user.name)}
                       </div>
 
                       <div className="flex flex-col">
-                        <div className=" font-semibold">
-                          {!loadingUser &&
-                            (user?.userName || user?.email || "")}{" "}
+                        <div className=" font-semibold text-sm" >
+                          {loading ? "please wait..." :
+                            user.name}
                         </div>
                         <div className="text-[12px] text-[var(--text-secondary)]">
                           {" "}
-                          {!loadingUser && (user?.email || "")}
+                          {loading ? "please wait..." : user.email}
                         </div>
                       </div>
                     </div>
@@ -98,7 +127,7 @@ const Navbar = () => {
                           Projects
                         </div>
                         <div className=" text-[14px] text-[var(--text-primary)]  font-bold">
-                          12
+                         {loading ? "please wait..." : user.projectsCount}
                         </div>
                       </div>
                       <div className="flex justify-between">
@@ -106,7 +135,8 @@ const Navbar = () => {
                           Connections
                         </div>
                         <div className=" text-[14px] text-[var(--text-primary)]  font-bold">
-                          24
+                         {loading ? "please wait..." : user.connectionsCount}
+                         
                         </div>
                       </div>
                       <div className="flex justify-between ">
@@ -152,12 +182,7 @@ const Navbar = () => {
 
                       <button
                         className="  flex flex-row justify-center items-center  px-2 py-2 rounded-md text-[var(--text-primary)] border font-medium m-3 border-[var(--border-color)] bg-transparent transition-[.3s] hover:bg-[var(--error2-color)] hover:border-[var(--error-color)] hover:text-[var(--error-color)]  "
-                        onClick={() => {
-                          localStorage.removeItem("token");
-                          localStorage.removeItem("user");
-
-                          window.location.href = "/";
-                        }}
+                        onClick= {handleLogout}
                       >
                         <svg
                           className="size-4 fill-[var(--text-secondary)] mx-2"
@@ -168,7 +193,7 @@ const Navbar = () => {
                         Sign Out
                       </button>
                     </div>
-                  </div>
+                  </div>}
                 </div>
               </div>
             </div>

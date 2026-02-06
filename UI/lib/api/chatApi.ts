@@ -26,9 +26,6 @@ export interface Message {
   messageType: string;  
 }
 
- 
-
- 
   // Get all conversations of logged-in user
   
  
