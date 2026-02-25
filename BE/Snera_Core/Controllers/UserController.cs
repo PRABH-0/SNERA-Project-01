@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Snera_Core.Models.UserModels;
 using Snera_Core.Services;
+using System;
 using System.Threading.Tasks;
 
 namespace Snera_Core.Controllers
@@ -10,9 +11,9 @@ namespace Snera_Core.Controllers
     [Route("api/[controller]")]
     public class UsersController : ControllerBase
     {
-        private readonly UserService _userService;
+        private readonly IUserService _userService;
 
-        public UsersController(UserService userService)
+        public UsersController(IUserService userService)
         {
             _userService = userService;
         }
@@ -39,51 +40,60 @@ namespace Snera_Core.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] UserLoginModel dto)
         {
-            try
+            await _userService.LoginUserAsync(dto);
+
+            return Ok(new
             {
-                var userResponse = await _userService.LoginUserAsync(dto);
-                return Ok(userResponse);
-            }
-            catch (System.Exception ex)
-            {
-                return BadRequest(new { error = ex.Message });
-            }
+                message = "Login successful"
+            });
         }
+
+
         [Authorize]
-        [HttpPut("UpdateUser")]
-        public async Task<IActionResult> UpdateUser(Guid id,UpdateUserModel model)
+        [HttpPut("update")]
+        public async Task<IActionResult> UpdateUser([FromBody] UpdateUserModel model)
         {
             try
             {
-                var userResponse = await _userService.UpdateUserAsync(id ,model);
+                var userResponse = await _userService.UpdateUserAsync(model);
                 return Ok(userResponse);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { error = ex.Message });
             }
             catch (System.Exception ex)
             {
                 return BadRequest(new { error = ex.Message });
             }
         }
+
         [Authorize]
-        [HttpDelete("DeleteUser")]
-        public async Task<IActionResult> DeleteUser(Guid id)
+        [HttpDelete("delete/{userId}")]
+        public async Task<IActionResult> DeleteUser(Guid userId)
         {
             try
             {
-                var userResponse = await _userService.SoftDeleteUserAsync(id);
+                var userResponse = await _userService.SoftDeleteUserAsync(userId);
                 return Ok(userResponse);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { error = ex.Message });
             }
             catch (System.Exception ex)
             {
                 return BadRequest(new { error = ex.Message });
             }
         }
+
         [Authorize]
-        [HttpGet("GetUserById")]
-        public async Task<IActionResult> GetUserById(Guid id)
+        [HttpGet("get/{userId}")]
+        public async Task<IActionResult> GetUserById(Guid userId)
         {
             try
             {
-                var userResponse = await _userService.GetUserByIdAsync(id);
+                var userResponse = await _userService.GetUserByIdAsync(userId);
                 return Ok(userResponse);
             }
             catch (System.Exception ex)
@@ -91,55 +101,156 @@ namespace Snera_Core.Controllers
                 return BadRequest(new { error = ex.Message });
             }
         }
+
         [Authorize]
-        [HttpGet("getall/{onlyActiveUsers}")]
+        [HttpGet("my-profile")]
+        public async Task<IActionResult> GetMyProfile()
+        {
+            try
+            {
+                var result = await _userService.GetCurrentUserAsync();
+                return Ok(result);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { error = ex.Message });
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
+
+        [Authorize]
+        [HttpGet("all/{onlyActiveUsers}")]
         public async Task<IActionResult> GetAllUsers(bool onlyActiveUsers)
         {
-            var users = await _userService.GetAllUsersAsync(onlyActiveUsers);
-            return Ok(users);
+            try
+            {
+                var users = await _userService.GetAllUsersAsync(onlyActiveUsers);
+                return Ok(users);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
         }
-        [HttpPatch("PatchUser/{userId}")]
-        public async Task<IActionResult> PatchUser(Guid userId, [FromBody] UserModel model)
-        {
-            var result = await _userService.PatchUserAsync(userId, model);
-            return Ok(new { message = result });
-        }
+
         [Authorize]
-        [HttpGet("profile/{userId}")]
-        public async Task<IActionResult> GetUserProfile(Guid userId)
+        [HttpPatch("patch")]
+        public async Task<IActionResult> PatchUser([FromBody] UserModel model)
         {
-            var profile = await _userService.GetUserProfileAsync(userId);
-            return Ok(profile);
+            try
+            {
+                var result = await _userService.PatchUserAsync(model);
+                return Ok(new { message = result });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { error = ex.Message });
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
+
+        [Authorize]
+        [HttpGet("profile")]
+        public async Task<IActionResult> GetUserProfile()
+        {
+            try
+            {
+                var profile = await _userService.GetUserProfileAsync();
+                return Ok(profile);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { error = ex.Message });
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
         }
 
         [Authorize]
         [HttpPost("logout")]
-        public async Task<IActionResult> Logout([FromBody] LogoutRequestModel model)
+        public async Task<IActionResult> Logout()
         {
-            var result = await _userService.LogoutAsync(model.RefreshToken);
-            return Ok(new { message = result });
-        }
-        [Authorize]
-        [HttpPost("updateProfile")]
-        public async Task<IActionResult> UpdateUserProfileAsync(Guid userId, UpdateUserProfileModel dto)
-        {
-            var result = await _userService.UpdateUserProfileAsync(userId,dto);
-            return Ok(new { message = result });
-        }
-        [Authorize]
-        [HttpPatch("profile/{userId}")]
-        public async Task<IActionResult> PatchProfile(Guid userId, UpdateUserProfileModel model)
-        {
-            var result = await _userService.PatchUserProfileAsync(userId, model);
-            return Ok(result);
+            // 🧹 DELETE COOKIES HERE
+            Response.Cookies.Delete("access_token");
+            Response.Cookies.Delete("refresh_token");
+
+            return Ok(new { message = "Logout successful" });
         }
 
-        [HttpPost("refresh")]
-        public async Task<IActionResult> RefreshToken([FromBody] string token)
+
+        [Authorize]
+        [HttpPut("update-profile")]
+        public async Task<IActionResult> UpdateUserProfile([FromBody] UpdateUserProfileModel dto)
         {
-            var response = await _userService.RefreshTokenAsync(token);
-            return Ok(response);
+            try
+            {
+                var result = await _userService.UpdateUserProfileAsync(dto);
+                return Ok(new { message = result });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { error = ex.Message });
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
+
+        [Authorize]
+        [HttpPatch("patch-profile")]
+        public async Task<IActionResult> PatchProfile([FromBody] UpdateUserProfileModel model)
+        {
+            try
+            {
+                var result = await _userService.PatchUserProfileAsync(model);
+                return Ok(new { message = result });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { error = ex.Message });
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
+
+        [HttpPost("refresh-token")]
+        public async Task<IActionResult> RefreshToken()
+        {
+            try
+            {
+                var refreshToken = Request.Cookies["refresh_token"];
+
+                if (string.IsNullOrEmpty(refreshToken))
+                {
+                    return Unauthorized(new { error = "Refresh token missing" });
+                }
+
+                var response = await _userService.RefreshTokenAsync(refreshToken);
+
+                return Ok(response);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
         }
 
     }
+
+
 }

@@ -5,6 +5,7 @@ using Snera_Core.Entities.UserEntities;
 using Snera_Core.Models.UserModels;
 using Snera_Core.Models.UserProjectModels;
 using Snera_Core.UnitOfWork;
+using System.Security.Claims;
 using System.Text.RegularExpressions;
 
 namespace Snera_Core.Services
@@ -14,12 +15,26 @@ namespace Snera_Core.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly PasswordHasher<string> _passwordHasher;
         private readonly JwtService _tokenService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public UserService(IUnitOfWork unitOfWork, JwtService tokenService)
+        public UserService(IUnitOfWork unitOfWork, JwtService tokenService, IHttpContextAccessor httpContextAccessor)
         {
             _unitOfWork = unitOfWork;
             _passwordHasher = new PasswordHasher<string>();
             _tokenService = tokenService;
+            _httpContextAccessor = httpContextAccessor;
+        }
+
+        private Guid GetCurrentUserId()
+        {
+            var userIdClaim = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier);
+
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+            {
+                throw new UnauthorizedAccessException("User not authenticated");
+            }
+
+            return userId;
         }
 
         public async Task<User> RegisterUserAsync(UserRegisterModel dto)
@@ -75,7 +90,6 @@ namespace Snera_Core.Services
             }
 
             return newUser;
-
         }
 
         public async Task<LoginResponseModel> LoginUserAsync(UserLoginModel dto)
@@ -86,52 +100,76 @@ namespace Snera_Core.Services
             if (user == null)
                 throw new Exception(CommonErrors.UserNotFound);
 
-            var result = _passwordHasher.VerifyHashedPassword(dto.Email, user.PasswordHash, dto.Password);
+            var result = _passwordHasher.VerifyHashedPassword(
+                dto.Email,
+                user.PasswordHash,
+                dto.Password
+            );
 
             if (result != PasswordVerificationResult.Success)
                 throw new Exception(CommonErrors.InvalidCredentials);
 
+            user.User_Status = "Online";
+
             var accessToken = _tokenService.CreateToken(user);
             var refreshToken = _tokenService.GenerateRefreshToken();
 
-            var refreshTokenEntity = new RefreshToken
+            await _unitOfWork.RefreshTokens.AddAsync(new RefreshToken
             {
                 Id = Guid.NewGuid(),
                 UserId = user.Id,
                 Token = refreshToken,
-                ExpiresAt = DateTime.UtcNow.AddDays(1) 
-            };
+                ExpiresAt = DateTime.UtcNow.AddDays(7)
+            });
 
-            await _unitOfWork.RefreshTokens.AddAsync(refreshTokenEntity);
             await _unitOfWork.SaveAllAsync();
 
+            // 🔥 SET COOKIES HERE
+            var context = _httpContextAccessor.HttpContext!;
 
+            context.Response.Cookies.Append("access_token", accessToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true, // HTTPS only
+                SameSite = SameSiteMode.None,
+                Expires = DateTime.UtcNow.AddMinutes(60)
+            });
+
+            context.Response.Cookies.Append("refresh_token", refreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTime.UtcNow.AddDays(7)
+            });
+
+            // ✅ NO TOKEN IN RESPONSE
             return new LoginResponseModel
             {
                 UserId = user.Id,
                 UserName = user.FullName,
-                LoginResponseString = "Login successful",
-                UserEmail = dto.Email,
-                AccessToken = accessToken,
-                RefreshToken = refreshToken
+                UserEmail = user.Email,
+                LoginResponseString = "Login successful"
             };
         }
-        public async Task<LoginResponseModel> RefreshTokenAsync(string token)
+
+        public async Task<string> RefreshTokenAsync(string refreshToken)
         {
             var storedToken = await _unitOfWork.RefreshTokens
-                .FirstOrDefaultAsync(t => t.Token == token && !t.IsRevoked);
+                .FirstOrDefaultAsync(t => t.Token == refreshToken && !t.IsRevoked);
 
             if (storedToken == null || storedToken.ExpiresAt < DateTime.UtcNow)
-                throw new Exception("Invalid refresh token");
+                throw new UnauthorizedAccessException("Invalid or expired refresh token");
 
             var user = await _unitOfWork.Users
-                .FirstOrDefaultAsync(u => u.Id == storedToken.UserId);
+                .FirstOrDefaultAsync(u => u.Id == storedToken.UserId && u.Record_State == "Active");
 
             if (user == null)
-                throw new Exception("User not found");
+                throw new UnauthorizedAccessException("User not found");
 
             storedToken.IsRevoked = true;
 
+            var newAccessToken = _tokenService.CreateToken(user);
             var newRefreshToken = _tokenService.GenerateRefreshToken();
 
             await _unitOfWork.RefreshTokens.AddAsync(new RefreshToken
@@ -142,19 +180,27 @@ namespace Snera_Core.Services
                 ExpiresAt = DateTime.UtcNow.AddDays(7)
             });
 
-            var newAccessToken = _tokenService.CreateToken(user);
-
-
             await _unitOfWork.SaveAllAsync();
 
-            return new LoginResponseModel
+            var context = _httpContextAccessor.HttpContext!;
+
+            context.Response.Cookies.Append("access_token", newAccessToken, new CookieOptions
             {
-                UserId = user.Id,
-                UserName = user.FullName,
-                UserEmail = user.Email,
-                AccessToken = newAccessToken,
-                RefreshToken = newRefreshToken
-            };
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTime.UtcNow.AddMinutes(60)
+            });
+
+            context.Response.Cookies.Append("refresh_token", newRefreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTime.UtcNow.AddDays(7)
+            });
+
+            return "Token refreshed successfully";
         }
 
         public async Task<IEnumerable<UserModel>> GetAllUsersAsync(bool onlyActiveUsers)
@@ -201,6 +247,14 @@ namespace Snera_Core.Services
 
         public async Task<string> SoftDeleteUserAsync(Guid userId)
         {
+            var currentUserId = GetCurrentUserId();
+
+            // Only allow users to delete their own account
+            if (userId != currentUserId)
+            {
+                throw new UnauthorizedAccessException("Cannot delete another user's account");
+            }
+
             var user = await _unitOfWork.Users.FirstOrDefaultAsync(u => u.Id == userId);
 
             if (user == null)
@@ -215,8 +269,9 @@ namespace Snera_Core.Services
             return "User deleted successfully";
         }
 
-        public async Task<string> UpdateUserAsync(Guid userId, UpdateUserModel dto)
+        public async Task<string> UpdateUserAsync(UpdateUserModel dto)
         {
+            var userId = GetCurrentUserId();
             var user = await _unitOfWork.Users
                 .FirstOrDefaultAsync(u => u.Id == userId && u.Record_State == "Active");
 
@@ -251,25 +306,28 @@ namespace Snera_Core.Services
             await _unitOfWork.SaveAllAsync();
             return "User updated successfully";
         }
+
         public async Task<string> LogoutAsync(string refreshToken)
         {
             var storedToken = await _unitOfWork.RefreshTokens
                 .FirstOrDefaultAsync(t => t.Token == refreshToken && !t.IsRevoked);
-            var user = (await _unitOfWork.Users.FindAsync(u => u.Id == storedToken.UserId)).FirstOrDefault();
-            if (user.User_Status != "Offline")
-                user.User_Status = "Offline";
+
             if (storedToken == null)
                 return "Already logged out";
 
-            storedToken.IsRevoked = true;
+            var user = (await _unitOfWork.Users.FindAsync(u => u.Id == storedToken.UserId)).FirstOrDefault();
+            if (user != null && user.User_Status != "Offline")
+                user.User_Status = "Offline";
 
+            storedToken.IsRevoked = true;
             await _unitOfWork.SaveAllAsync();
 
             return "Logout successful";
         }
 
-        public async Task<string> PatchUserAsync(Guid userId, UserModel dto)
+        public async Task<string> PatchUserAsync(UserModel dto)
         {
+            var userId = GetCurrentUserId();
             var user = await _unitOfWork.Users
                 .FirstOrDefaultAsync(u => u.Id == userId && u.Record_State == "Active");
 
@@ -311,7 +369,6 @@ namespace Snera_Core.Services
                 user.Email = dto.Email;
             }
 
-
             if (dto.UserSkills != null)
             {
                 var oldSkills = await _unitOfWork.UserSkills
@@ -335,8 +392,10 @@ namespace Snera_Core.Services
             await _unitOfWork.SaveAllAsync();
             return "User updated successfully (partial)";
         }
-        public async Task<UserProfileResponseModel> GetUserProfileAsync(Guid userId)
+
+        public async Task<UserProfileResponseModel> GetUserProfileAsync()
         {
+            var userId = GetCurrentUserId();
             var user = await _unitOfWork.Users
                 .FirstOrDefaultAsync(u => u.Id == userId && u.Record_State == "Active");
 
@@ -362,101 +421,77 @@ namespace Snera_Core.Services
                 .Where(p => p.ProjectTeamMembers != null &&
                             p.ProjectTeamMembers.Any(m => m.User_Id == userId))
                 .ToList();
+
             var links = (await _unitOfWork.UserLinks
-    .FindAsync(l => l.UserId == userId && l.Record_State == "Active"))
-    ?? Enumerable.Empty<UserLink>();
+                .FindAsync(l => l.UserId == userId && l.Record_State == "Active"))
+                ?? Enumerable.Empty<UserLink>();
 
             return new UserProfileResponseModel
             {
-                // ✅ BASIC INFO
                 UserId = user.Id,
                 Name = user.FullName ?? "",
                 Title = user.CurrentRole ?? "",
                 ProfileType = user.ProfileType ?? "",
                 ExperienceLevel = user.Experience ?? "",
-
-                // ✅ ABOUT
                 Bio = user.Bio ?? "",
                 Location = profileDetail?.Location ?? "",
                 Availability = profileDetail?.Availability ?? "",
                 PreferredRole = profileDetail?.PreferredRole ?? "",
                 Education = profileDetail?.Education ?? "",
-
-                // ✅ CONTACT
                 Email = links.FirstOrDefault(l => l.LinkType == "EMAIL")?.LinkValue
-        ?? user.Email ?? "",
-
+                    ?? user.Email ?? "",
                 GitHub = links.FirstOrDefault(l => l.LinkType == "GITHUB")?.LinkValue ?? "",
-
                 LinkedIn = links.FirstOrDefault(l => l.LinkType == "LINKEDIN")?.LinkValue ?? "",
-
-
-                // ✅ STATS
                 ProjectsCount = userProjects.Count,
                 ConnectionsCount = 0,
                 YearsOfExperience = ExtractYears(user.Experience),
-
-                // ✅ SKILLS
                 SkillsHave = skills
                     .Where(s => s.Skill_Type == "HAVE")
                     .Select(s => s.Skill_Name)
                     .ToList(),
-
                 SkillsNeed = skills
                     .Where(s => s.Skill_Type == "NEED")
                     .Select(s => s.Skill_Name)
                     .ToList(),
-
-                // ✅ PREFERENCES
                 ProjectTypes = preferences
                     .Where(p => p.PreferenceType == "PROJECT_TYPE")
                     .Select(p => p.PreferenceValue)
                     .ToList(),
-
                 WorkTypes = preferences
                     .Where(p => p.PreferenceType == "WORK_TYPE")
                     .Select(p => p.PreferenceValue)
                     .ToList(),
-
-                // ✅ PROJECTS
                 Projects = userProjects.Select(p => new ProjectResponseModel
                 {
                     IsEditable = p.ProjectTeamMembers != null &&
                                  p.ProjectTeamMembers.Any(m => m.User_Id == userId),
-
                     DisplayJoinTeamButton = p.ProjectTeamMembers == null ||
                                             !p.ProjectTeamMembers.Any(m => m.User_Id == userId),
-
                     Project = new ProjectDto
                     {
                         Id = p.Id,
                         Created_Timestamp = p.Created_Timestamp
                     },
-
                     ProjectDescription = p.ProjectDescription?
                         .Select(d => new ProjectDescriptionDto
                         {
                             Description = d.Description
                         })
                         .FirstOrDefault(),
-
                     SkillsHave = p.ProjectSkills?
                         .Where(s => s.Skill_Type == "HAVE")
                         .Select(s => s.Skill_Name)
                         .ToList() ?? new(),
-
                     SkillsNeed = p.ProjectSkills?
                         .Where(s => s.Skill_Type == "NEED")
                         .Select(s => s.Skill_Name)
                         .ToList() ?? new(),
-
                     TeamMembers = p.ProjectTeamMembers?
                         .Select(m => new TeamMemberDto
                         {
                             User_Id = m.User_Id
                         })
                         .ToList() ?? new(),
-
                     CurrentTasks = p.ProjectCurrentTasks?
                         .Select(t => new TaskDto
                         {
@@ -464,7 +499,6 @@ namespace Snera_Core.Services
                             Is_Completed = t.Is_Completed
                         })
                         .ToList() ?? new(),
-
                     Timelines = p.ProjectTimelines?
                         .Select(t => new TimelineDto
                         {
@@ -472,29 +506,26 @@ namespace Snera_Core.Services
                             Date_TimeFrame = t.Date_TimeFrame
                         })
                         .ToList() ?? new(),
-
                     DeveloperRequests = p.ProjectDeveloperRequest?
                         .Select(r => new DeveloperRequestDto
                         {
                             Record_State = r.Record_State
                         })
                         .ToList() ?? new(),
-
                     ResourceLinks = p.ResourseLinks?
                         .Select(r => new ResourceLinkDto
                         {
                             Link = r.Link
                         })
                         .ToList() ?? new()
-
                 }).ToList(),
-
-                // ✅ DATE
                 JoinDate = user.Created_Timestamp
             };
         }
-        public async Task<string> UpdateUserProfileAsync(Guid userId, UpdateUserProfileModel dto)
+
+        public async Task<string> UpdateUserProfileAsync(UpdateUserProfileModel dto)
         {
+            var userId = GetCurrentUserId();
             var user = await _unitOfWork.Users
                 .FirstOrDefaultAsync(u => u.Id == userId && u.Record_State == "Active");
 
@@ -619,15 +650,21 @@ namespace Snera_Core.Services
             await _unitOfWork.SaveAllAsync();
             return "Profile updated successfully";
         }
-        public async Task<string> PatchUserProfileAsync(Guid userId, UpdateUserProfileModel dto)
+
+        public async Task<UserProfileResponseModel> GetCurrentUserAsync()
         {
+            return await GetUserProfileAsync();
+        }
+
+        public async Task<string> PatchUserProfileAsync(UpdateUserProfileModel dto)
+        {
+            var userId = GetCurrentUserId();
             var user = await _unitOfWork.Users
                 .FirstOrDefaultAsync(u => u.Id == userId && u.Record_State == "Active");
 
             if (user == null)
                 throw new Exception("User not found");
 
-            // 1️⃣ BASIC FIELDS
             if (dto.Name != null)
             {
                 user.FullName = dto.Name;
@@ -639,13 +676,7 @@ namespace Snera_Core.Services
             if (dto.ExperienceLevel != null) user.Experience = dto.ExperienceLevel;
             if (dto.Bio != null) user.Bio = dto.Bio;
 
-            // 2️⃣ PROFILE DETAILS
-            if (
-                dto.Location != null ||
-                dto.Availability != null ||
-                dto.PreferredRole != null ||
-                dto.Education != null
-            )
+            if (dto.Location != null || dto.Availability != null || dto.PreferredRole != null || dto.Education != null)
             {
                 var profileDetail = await _unitOfWork.UserProfileDetail
                     .FirstOrDefaultAsync(p => p.UserId == userId && p.Record_State == "Active");
@@ -668,7 +699,6 @@ namespace Snera_Core.Services
                 if (dto.Education != null) profileDetail.Education = dto.Education;
             }
 
-            // 3️⃣ SKILLS
             if (dto.SkillsHave != null || dto.SkillsNeed != null)
             {
                 var oldSkills = await _unitOfWork.UserSkills
@@ -708,7 +738,6 @@ namespace Snera_Core.Services
                 }
             }
 
-            // 4️⃣ PREFERENCES
             if (dto.ProjectTypes != null || dto.WorkTypes != null)
             {
                 var oldPrefs = await _unitOfWork.UserPreference
@@ -748,43 +777,32 @@ namespace Snera_Core.Services
                 }
             }
 
-            // 5️⃣ LINKS (THIS WAS THE BROKEN PART)
-            if (
-                dto.Email != null ||
-                dto.GitHub != null ||
-                dto.LinkedIn != null
-            )
+            if (dto.Email != null || dto.GitHub != null || dto.LinkedIn != null)
             {
                 await UpsertUserLink(userId, "EMAIL", dto.Email);
                 await UpsertUserLink(userId, "GITHUB", dto.GitHub);
                 await UpsertUserLink(userId, "LINKEDIN", dto.LinkedIn);
             }
 
-            // ✅ SAVE EVERYTHING AT THE END
             await _unitOfWork.SaveAllAsync();
-
             return "Profile patched successfully";
         }
 
-        private async Task UpsertUserLink(
-    Guid userId,
-    string linkType,
-    string? value
-)
+        private async Task UpsertUserLink(Guid userId, string linkType, string? value)
         {
             var existing = await _unitOfWork.UserLinks
                 .FirstOrDefaultAsync(l =>
                     l.UserId == userId &&
                     l.LinkType == linkType &&
                     l.Record_State == "Active");
-            
+
             if (string.IsNullOrWhiteSpace(value))
             {
                 if (existing != null)
                     _unitOfWork.UserLinks.Delete(existing);
-
                 return;
             }
+
             if (existing == null)
             {
                 await _unitOfWork.UserLinks.AddAsync(new UserLink

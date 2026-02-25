@@ -2,7 +2,7 @@ import * as signalR from "@microsoft/signalr";
 
 export const createSignalRConnection = () => {
   return new signalR.HubConnectionBuilder()
-    .withUrl("http://localhost:5000/chatHub", {
+    .withUrl("https://localhost:44300/chatHub", {
       withCredentials: true,
       transport: signalR.HttpTransportType.WebSockets, // 🔒 force WS
     })

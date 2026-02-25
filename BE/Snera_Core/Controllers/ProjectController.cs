@@ -3,8 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Snera_Core.Interface;
 using Snera_Core.Models.HelperModels;
 using Snera_Core.Models.UserProjectModels;
-using Snera_Core.Services;
-using Snera_Core.UnitOfWork;
 
 namespace Snera_Core.Controllers
 {
@@ -19,14 +17,18 @@ namespace Snera_Core.Controllers
             _projectService = projectService;
         }
 
-        [HttpPost("CreatePost")]
+        [HttpPost("create")]
         [Authorize]
-        public async Task<IActionResult> CreateProject(UserPostModel post)
+        public async Task<IActionResult> CreateProject([FromBody] UserPostModel post)
         {
             try
             {
                 var response = await _projectService.CreateProject(post);
-                return Ok(response);
+                return Ok(new { message = response });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { error = ex.Message });
             }
             catch (Exception ex)
             {
@@ -34,14 +36,18 @@ namespace Snera_Core.Controllers
             }
         }
 
-        [HttpGet("GetProject")]
+        [HttpGet("get/{projectId}")]
         [Authorize]
-        public async Task<IActionResult> GetProject(Guid userId, Guid projectId)
+        public async Task<IActionResult> GetProject(Guid projectId)
         {
             try
             {
-                var response = await _projectService.GetProject(userId, projectId);
+                var response = await _projectService.GetProject(projectId);
                 return Ok(response);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { error = ex.Message });
             }
             catch (Exception ex)
             {
@@ -49,28 +55,18 @@ namespace Snera_Core.Controllers
             }
         }
 
-        [HttpPost("GetAllProject")]
+        [HttpPost("all")]
         [Authorize]
-        public async Task<IActionResult> GetAllProject(FilterModel model)
+        public async Task<IActionResult> GetAllProject([FromBody] FilterModel model)
         {
             try
             {
                 var response = await _projectService.GetAllPosts(model);
                 return Ok(response);
             }
-            catch (Exception ex)
+            catch (UnauthorizedAccessException ex)
             {
-                return BadRequest(new { error = ex.Message });
-            }
-        }
-        [HttpPost("GetAllProjectByUserId")]
-        [Authorize]
-        public async Task<IActionResult> GetAllProjectByUserId(Guid userId)
-        {
-            try
-            {
-                var response = await _projectService.GetUserProjects(userId);
-                return Ok(response);
+                return Unauthorized(new { error = ex.Message });
             }
             catch (Exception ex)
             {
@@ -78,14 +74,48 @@ namespace Snera_Core.Controllers
             }
         }
 
-        [HttpPost("LikeProjectPost")]
+        [HttpGet("my-projects")]
         [Authorize]
-        public async Task<IActionResult> LikeProjectPost(Guid userId, Guid projectId)
+        public async Task<IActionResult> GetMyProjects()
         {
             try
             {
-                var response = await _projectService.LikeProjectPost(userId, projectId);
+                var response = await _projectService.GetUserProjects();
                 return Ok(response);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
+        [Authorize]
+        [HttpPatch("patch-task")]
+        public async Task<IActionResult> PatchCurrentTask([FromBody] PatchCurrentTaskModel model)
+        {
+            if (model == null || model.Task_Id == Guid.Empty)
+                return BadRequest("Invalid request");
+
+            var result = await _projectService.PatchCurrentTask(model);
+
+            return Ok(new { message = result });
+        }
+
+        [HttpPost("like/{projectId}")]
+        [Authorize]
+        public async Task<IActionResult> LikeProjectPost(Guid projectId)
+        {
+            try
+            {
+                var response = await _projectService.LikeProjectPost(projectId);
+                return Ok(new { message = response });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { error = ex.Message });
             }
             catch (Exception ex)
             {
@@ -93,14 +123,18 @@ namespace Snera_Core.Controllers
             }
         }
 
-        [HttpPost("CommentOnProject")]
+        [HttpPost("comment/{projectId}")]
         [Authorize]
-        public async Task<IActionResult> CommentOnProject(Guid userId, Guid projectId, string comment)
+        public async Task<IActionResult> CommentOnProject(Guid projectId, [FromBody] CommentRequestModel model)
         {
             try
             {
-                var response = await _projectService.CommentOnProject(userId, projectId, comment);
-                return Ok(response);
+                var response = await _projectService.CommentOnProject(projectId, model.Comment);
+                return Ok(new { message = response });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { error = ex.Message });
             }
             catch (Exception ex)
             {
@@ -108,14 +142,18 @@ namespace Snera_Core.Controllers
             }
         }
 
-        [HttpPut("UpdateProjectDescription")]
+        [HttpPut("update-description")]
         [Authorize]
-        public async Task<IActionResult> UpdateProjectDescription(UpdateProjectDescriptionModel model)
+        public async Task<IActionResult> UpdateProjectDescription([FromBody] UpdateProjectDescriptionModel model)
         {
             try
             {
                 var response = await _projectService.UpdateProjectDescription(model);
-                return Ok(response);
+                return Ok(new { message = response });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { error = ex.Message });
             }
             catch (Exception ex)
             {
@@ -123,14 +161,18 @@ namespace Snera_Core.Controllers
             }
         }
 
-        [HttpPost("AddCurrentTask")]
+        [HttpPost("add-task")]
         [Authorize]
-        public async Task<IActionResult> AddCurrentTask(CreateTaskModel model)
+        public async Task<IActionResult> AddCurrentTask([FromBody] CreateTaskModel model)
         {
             try
             {
                 var response = await _projectService.AddCurrentTask(model);
-                return Ok(response);
+                return Ok(new { message = response });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { error = ex.Message });
             }
             catch (Exception ex)
             {
@@ -138,21 +180,26 @@ namespace Snera_Core.Controllers
             }
         }
 
-        [HttpPost("AddTimeline")]
+        [HttpPost("add-timeline")]
         [Authorize]
-        public async Task<IActionResult> AddTimeline(CreateTimelineModel model)
+        public async Task<IActionResult> AddTimeline([FromBody] CreateTimelineModel model)
         {
             try
             {
                 var response = await _projectService.AddProjectTimeline(model);
-                return Ok(response);
+                return Ok(new { message = response });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { error = ex.Message });
             }
             catch (Exception ex)
             {
                 return BadRequest(new { error = ex.Message });
             }
         }
-        [HttpGet("GetCurrentTasks")]
+
+        [HttpGet("tasks/{projectId}")]
         [Authorize]
         public async Task<IActionResult> GetAllCurrentTasks(Guid projectId)
         {
@@ -161,27 +208,36 @@ namespace Snera_Core.Controllers
                 var response = await _projectService.GetAllCurrentTasks(projectId);
                 return Ok(response);
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { error = ex.Message });
+            }
             catch (Exception ex)
             {
                 return BadRequest(new { error = ex.Message });
             }
         }
 
-        [HttpPost("AddResourceLink")]
+        [HttpPost("add-resource")]
         [Authorize]
-        public async Task<IActionResult> AddResourceLink(CreateResourceLinkModel model)
+        public async Task<IActionResult> AddResourceLink([FromBody] CreateResourceLinkModel model)
         {
             try
             {
                 var response = await _projectService.AddResourceLink(model);
-                return Ok(response);
+                return Ok(new { message = response });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { error = ex.Message });
             }
             catch (Exception ex)
             {
                 return BadRequest(new { error = ex.Message });
             }
         }
-        [HttpGet("GetTrendingSkills")]
+
+        [HttpGet("trending-skills")]
         [Authorize]
         public async Task<IActionResult> GetTrendingSkills()
         {
@@ -196,21 +252,26 @@ namespace Snera_Core.Controllers
             }
         }
 
-        [HttpPost("SendDeveloperRequest")]
+        [HttpPost("send-request")]
         [Authorize]
-        public async Task<IActionResult> SendDeveloperRequest(JoinTeamRequestModel request)
+        public async Task<IActionResult> SendDeveloperRequest([FromBody] JoinTeamRequestModel request)
         {
             try
             {
                 var response = await _projectService.SendDeveloperRequest(request);
                 return Ok(response);
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { error = ex.Message });
+            }
             catch (Exception ex)
             {
                 return BadRequest(new { error = ex.Message });
             }
         }
-        [HttpGet("GetDeveloperRequestsByProjectId")]
+
+        [HttpGet("requests/{projectId}")]
         [Authorize]
         public async Task<IActionResult> GetDeveloperRequestsByProjectId(Guid projectId)
         {
@@ -219,27 +280,34 @@ namespace Snera_Core.Controllers
                 var response = await _projectService.GetDeveloperRequestsByProjectId(projectId);
                 return Ok(response);
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { error = ex.Message });
+            }
             catch (Exception ex)
             {
                 return BadRequest(new { error = ex.Message });
             }
         }
-        [HttpPost("HandleDeveloperRequest")]
+
+        [HttpPost("handle-request/{developerRequestId}")]
         [Authorize]
-        public async Task<IActionResult> HandleDeveloperRequest( Guid adminUserId,  Guid developerRequestId, bool isAccepted)
+        public async Task<IActionResult> HandleDeveloperRequest(Guid developerRequestId, [FromBody] HandleRequestModel model)
         {
             try
             {
-                var response = await _projectService
-                    .HandleDeveloperRequest(adminUserId, developerRequestId, isAccepted);
-
-                return Ok(response);
+                var response = await _projectService.HandleDeveloperRequest(developerRequestId, model.IsAccepted);
+                return Ok(new { message = response });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { error = ex.Message });
             }
             catch (Exception ex)
             {
                 return BadRequest(new { error = ex.Message });
             }
         }
-
     }
+
 }
