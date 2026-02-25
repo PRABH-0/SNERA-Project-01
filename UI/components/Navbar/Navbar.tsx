@@ -74,7 +74,7 @@ const Navbar = () => {
 
             <div
               className="dropdown curser-pointer "
-              onClick={() => router.push("/createProject")}
+              onClick={() => router.push("/CreateProject")}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -151,7 +151,7 @@ const Navbar = () => {
 
                     <div className="flex flex-col  ">
                       <Link
-                        href="/createProject"
+                      href="/CreateProject"
                         className="flex gap-3 items-center h-10 hover:bg-[var(--bg-secondary)] transition-[.2s] p-3 text-[var(--text-primary)]"
                       >
                         <svg

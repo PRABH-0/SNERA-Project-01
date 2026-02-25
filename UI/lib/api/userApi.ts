@@ -33,7 +33,7 @@ const userApi = {
   },
 
   // 🔐 Login
-  login: (data: LoginPayload) => {
+   login: (data: LoginPayload) => {
     return API.post<LoginResponse>("/Users/login", data);
     // 👉 backend cookies set karega (access + refresh)
   },
@@ -46,7 +46,7 @@ const userApi = {
 
   // 👤 Get current user (token decode backend karega)
   getMe: () => {
-    return API.get("/Users/profile");
+    return API.get("/Users/my-profile");
   },
 
   // 👥 Get all users

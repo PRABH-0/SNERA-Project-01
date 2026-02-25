@@ -9,8 +9,11 @@ import {
 } from "@/lib/api/chatApi";
 import { createSignalRConnection } from "@/lib/signalr";
 import { getAvatarName } from "@/utils/getAvatarName";
+import userApi from "@/lib/api/userApi";
 
 export default function ChatPage() {
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+
   const [isExpanded, setIsExpanded] = useState(false);
   const [conversations, setConversations] = useState<any[]>([]);
   const [activeConversation, setActiveConversation] = useState<any>(null);
@@ -19,11 +22,23 @@ export default function ChatPage() {
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const connectionRef = useRef<any>(null);
- const currentUserId =
-  typeof window !== "undefined"
-    ? JSON.parse(localStorage.getItem("user") || "{}")?.userId
-    : null;
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
+  useEffect(() => {
+    userApi
+      .getMe()
+      .then((res) => {
+        console.log("My profile:", res.data);
+        setCurrentUserId(res.data.userId);
+      })
+      .catch((err) => console.error("Get me error:", err));
+  }, []);
+
+  useEffect(() => {
+    if (activeConversation) {
+      inputRef.current?.focus();
+    }
+  }, [activeConversation]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "auto" });
@@ -39,59 +54,79 @@ export default function ChatPage() {
     };
   }, []);
 
- const openChat = async (conversation: any) => {
-  const prevConversation = activeConversation;
+  const openChat = async (conversation: any) => {
+    const prevConversation = activeConversation;
 
-  setActiveConversation(conversation);
+    setActiveConversation(conversation);
 
-  const msgs = await getMessages(conversation.id);
-  setMessages(msgs);
+    const msgs = await getMessages(conversation.id);
+    setMessages(msgs);
 
-  if (!connectionRef.current) {
-    const connection = createSignalRConnection();
-    connectionRef.current = connection;
+    if (!connectionRef.current) {
+      const connection = createSignalRConnection();
+      connectionRef.current = connection;
 
-    await connection.start();
+      await connection.start();
 
-    connection.off("ReceiveMessage");
-    connection.on("ReceiveMessage", (msg: any) => {
-      setMessages((prev) => {
-        if (!prev.length) return [msg];
-        if (prev[prev.length - 1]?.id === msg.id) return prev;
-        return [...prev, msg];
+      connection.off("ReceiveMessage");
+      connection.on("ReceiveMessage", (msg: any) => {
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
       });
-    });
 
-    connection.onclose((error) => {
-      console.error("SignalR disconnected", error);
-      window.location.href = "/";
-    });
-  }
+      connection.onclose((error) => {
+        console.error("SignalR disconnected", error);
+        window.location.href = "/";
+      });
+    }
 
-  if (prevConversation) {
+    if (prevConversation) {
+      await connectionRef.current.invoke(
+        "LeaveConversation",
+        prevConversation.id,
+      );
+    }
+
+    await connectionRef.current.invoke("JoinConversation", conversation.id);
+  };
+  const formatTime = (iso?: string) => {
+    if (!iso) return "";
+
+    // Convert backend format to safe local format
+    const localSafe = iso.replace("T", " ").split(".")[0];
+
+    const date = new Date(localSafe);
+
+    return date.toLocaleTimeString(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const sendMessage = async () => {
+    if (!messageText.trim() || !activeConversation) return;
+
     await connectionRef.current.invoke(
-      "LeaveConversation",
-      prevConversation.id
+      "SendMessage",
+      activeConversation.id,
+      messageText,
     );
-  }
 
-  await connectionRef.current.invoke(
-    "JoinConversation",
-    conversation.id
-  );
-};
-
+    setMessageText("");
+  };
 
   return (
     <main
-      className={`ml-[48px] mt-[60px] overflow-hidden transition-all duration-300 ${
-        isExpanded ? "" : "px-5 pt-5"
+      className={`  top-0b relative  transition-all duration-300 overflow-x-hidden   ${
+        isExpanded ? "m-auto w-[calc(93vw-90px)] top-30 h-full   rounded-lg" : "px-5 pt-5"
       }`}
     >
       <div
-        className={`flex   bg-[var(--card-bg)] overflow-hidden rounded-lg   shadow-[var(--card-shadow)]  border border-[var(--border-color)] transition-all duration-300 ${
+        className={`flex   bg-[var(--card-bg)]   rounded-lg   shadow-[var(--card-shadow)]  border border-[var(--border-color)] transition-all duration-300 ${
           isExpanded
-            ? "w-[96.29vw] h-[89vh] rounded-none   "
+            ? "w-full   rounded-none   "
             : "w-[92vw] h-[calc(100vh-56px-40px)]  "
         }`}
       >
@@ -124,7 +159,10 @@ export default function ChatPage() {
                           }
                         `}
               >
-                <Avatar text={getAvatarName(c.groupName)} color="from-blue-500 to-blue-400" />
+                <Avatar
+                  text={getAvatarName(c.groupName)}
+                  color="from-blue-500 to-blue-400"
+                />
 
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-sm text-[var(--text-primary)]">
@@ -144,14 +182,17 @@ export default function ChatPage() {
           {/* HEADER */}
           <div className="flex justify-between items-center px-5 py-2 border-b border-[var(--border-color)] ">
             <div className="flex items-center gap-3">
-              <Avatar text={getAvatarName(activeConversation?.groupName)} color="from-blue-500 to-blue-400" />
+              <Avatar
+                text={getAvatarName(activeConversation?.groupName)}
+                color="from-blue-500 to-blue-400"
+              />
 
               <div>
                 <div className="font-semibold text-[var(--text-primary)]">
-                   {activeConversation?.groupName }
+                  {activeConversation?.groupName}
                 </div>
 
-                <div className="text-sm text-[var(--text-secondary)]"></div>
+                <div className="text-sm text-[var(--text-secondary)]">Online</div>
               </div>
             </div>
 
@@ -171,10 +212,15 @@ export default function ChatPage() {
           </div>
 
           {/* MESSAGES */}
-          <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4 bg-[var(--bg-primary)]">
+          <div className="flex-1 overflow-y-auto  p-2 flex flex-col gap-1 bg-[var(--bg-primary)]">
             {messages.map((m) =>
-              currentUserId && m.senderId === currentUserId? (
-                <Sent key={m.id} avatar="ME" color="from-blue-500 to-blue-400">
+              currentUserId && m.senderId === currentUserId ? (
+                <Sent
+                  key={m.id}
+                  time={formatTime(m.sent_Timestamp)}
+                  avatar="ME"
+                  color="from-blue-500 to-blue-400"
+                >
                   {m.messageText}
                 </Sent>
               ) : (
@@ -182,10 +228,11 @@ export default function ChatPage() {
                   key={m.id}
                   avatar="US"
                   color="from-gray-500 to-gray-400"
+                  time={formatTime(m.sent_Timestamp)}
                 >
                   {m.messageText}
                 </Received>
-              )
+              ),
             )}
             <div ref={bottomRef} />
           </div>
@@ -200,8 +247,14 @@ export default function ChatPage() {
             </svg>
 
             <input
+              ref={inputRef}
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  sendMessage();
+                }
+              }}
               className="flex-1
                         border border-[var(--border-color)]
                         rounded-[20px]
@@ -216,19 +269,7 @@ export default function ChatPage() {
             ></input>
 
             <button
-              onClick={async () => {
-                if (!messageText.trim() || !activeConversation) return;
-
-                 
-
-                // 🔹 SEND VIA SIGNALR (REAL)
-                await connectionRef.current.invoke(
-                  "SendMessage",
-                  activeConversation.id,
-                  messageText
-                );
-                setMessageText("");
-              }}
+              onClick={sendMessage}
               className="w-9 h-9 rounded-full bg-blue-600 hover:bg-blue-700 flex items-center justify-center"
             >
               <svg
@@ -250,7 +291,7 @@ export default function ChatPage() {
 function Avatar({ text, color }: { text: string; color: string }) {
   return (
     <div
-      className={`w-10 h-10 rounded-full flex items-center justify-center text-[var(--text-primary)] text-sm font-semibold bg-gradient-to-br ${color}`}
+      className={`px-3 size-8 rounded-full flex items-center justify-center text-[var(--text-primary)] text-[12px] font-semibold bg-gradient-to-br ${color}`}
     >
       {text}
     </div>
@@ -293,34 +334,34 @@ function Meta({ time, unread }: any) {
   );
 }
 
-function Received({ avatar, color, children }: any) {
+function Received({ avatar, color, children, time }: any) {
   return (
-    <div className="flex gap-2 max-w-[70%]">
+    <div className="flex gap-1 max-w-[70%]">
       <Avatar text={avatar} color={color} />
       <div className="text-[var(--text-primary)]">
-        <div className="bg-[var(--card-bg)]  border border-[var(--border-color)] rounded-2xl rounded-bl-sm px-4 py-2 text-sm">
+        <div className="bg-[var(--card-bg)]  border border-[var(--border-color)] rounded-2xl rounded-bl-sm px-4 py-0.5 text-sm">
           {children}
+        <div className="text-[8px] text-[var(--text-primary)] text-right  relative left-2">
+          {time}
         </div>
-        <div className="text-xs text-[var(--text-primary)] px-2 mt-1">
-          10:20 AM
         </div>
       </div>
     </div>
   );
 }
 
-function Sent({ avatar, color, children }: any) {
+function Sent({ avatar, color, children, time }: any) {
   return (
-    <div className="flex gap-2 max-w-[70%] self-end flex-row-reverse">
-      <Avatar text={avatar} color={color} />
-      <div>
-        <div className="bg-blue-600 text-[var(--text-primary)] rounded-2xl rounded-br-sm px-4 py-2 text-sm">
+    <div className="flex gap-1 max-w-[70%] self-end  ">
+      
+        <div className="bg-blue-600 text-[var(--text-primary)] rounded-2xl rounded-br-sm py-0.5 px-4  text-sm    ">
           {children}
+        <div className="text-[8px] text-[var(--accent-color)] text-right  relative left-3  ">
+          {time}
         </div>
-        <div className="text-xs text-[var(--text-primary)] text-right px-2 mt-1">
-          10:25 AM
         </div>
-      </div>
+       
+      <Avatar text={avatar} color={color} />
     </div>
   );
 }
